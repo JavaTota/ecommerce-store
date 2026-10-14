@@ -1,5 +1,9 @@
 .auth-container {
   min-height: calc(100vh - 72px);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 40px 20px;
   background:
     radial-gradient(circle at top left, #eaf1ff 0, transparent 35%),
