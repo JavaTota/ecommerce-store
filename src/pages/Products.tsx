@@ -6,8 +6,10 @@ import {
   updateProduct,
 } from "../services/productService";
 import type { Product } from "../types/product";
+import { seedProducts } from "../services/seedProducts";
 
 function Products() {
+    
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
 
@@ -74,6 +76,21 @@ function Products() {
 
         <h2>Add Product</h2>
 
+
+        <button
+            onClick={async () => {
+                try {
+                await seedProducts();
+                await loadProducts();
+                alert("Products imported successfully!");
+                } catch (error) {
+                console.error(error);
+                alert("Import failed");
+                }
+            }}
+            >
+            Import Demo Products
+        </button>
         <input
             placeholder="Title"
             value={newProduct.title}
