@@ -12,7 +12,7 @@ export const seedProducts = async () => {
     const response = await fetch("https://fakestoreapi.com/products");
 
     if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        throw new Error("Failed to fetch demo products");
     }
 
     const products: FakeStoreProduct[] = await response.json();
@@ -27,5 +27,5 @@ export const seedProducts = async () => {
         });
     }
 
-    console.log(`${products.length} products added to Firestore`);
+    return products.length;
 };
