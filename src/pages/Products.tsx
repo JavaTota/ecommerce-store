@@ -194,8 +194,7 @@ function Products() {
             >
                 Edit
             </button>
-            <button onClick={() => setEditingProduct(product)} >Edit
-            </button>
+
             </div>
         ))}
         </div>

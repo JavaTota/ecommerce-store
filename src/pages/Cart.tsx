@@ -9,6 +9,7 @@ import {
 } from "../redux/cartSlice";
 import { createOrder } from "../services/orderService";
 import { useAuth } from "../context/AuthContext";
+import "../styles/store.css";
 
 function Cart() {
   const [checkoutMessage, setCheckoutMessage] = useState("");
@@ -54,62 +55,89 @@ function Cart() {
   }
 
   return (
-    <main style={{ padding: "1rem" }}>
-      <h1>Your Cart</h1>
+  <main className="cart-page">
+    <div className="container">
+      <div className="page-heading">
+        <h1>Your cart</h1>
+        <p>Review your items before checkout.</p>
+      </div>
 
       {checkoutMessage && <p>{checkoutMessage}</p>}
 
-      {cartItems.map((item) => (
-        <div
-          key={item.id}
-          style={{
-            display: "flex",
-            gap: "1rem",
-            alignItems: "center",
-            borderBottom: "1px solid #ddd",
-            padding: "1rem 0",
-          }}
-        >
-          <img
-            src={item.image}
-            alt={item.title}
-            style={{
-              width: "80px",
-              height: "80px",
-              objectFit: "contain",
-            }}
-          />
+      <div className="cart-layout">
+        <div className="cart-items">
+          {cartItems.map((item) => (
+            <article className="cart-item" key={item.id}>
+              <img
+                className="cart-image"
+                src={item.image}
+                alt={item.title}
+              />
 
-          <div>
-            <h3>{item.title}</h3>
+              <div>
+                <h3 className="cart-product-title">{item.title}</h3>
 
-            <div>
-              <button onClick={() => dispatch(decreaseQuantity(item.id))}>
-                -
-              </button>
+                <div className="quantity-controls">
+                  <button
+                    className="quantity-button"
+                    onClick={() =>
+                      dispatch(decreaseQuantity(item.id))
+                    }
+                  >
+                    −
+                  </button>
 
-              <span style={{ margin: "0 0.75rem" }}>{item.quantity}</span>
+                  <span>{item.quantity}</span>
 
-              <button onClick={() => dispatch(increaseQuantity(item.id))}>
-                +
-              </button>
-            </div>
+                  <button
+                    className="quantity-button"
+                    onClick={() =>
+                      dispatch(increaseQuantity(item.id))
+                    }
+                  >
+                    +
+                  </button>
+                </div>
 
-            <p>Price: ${(item.price * item.quantity).toFixed(2)}</p>
+                <button
+                  className="remove-button"
+                  onClick={() => dispatch(removeFromCart(item.id))}
+                >
+                  Remove
+                </button>
+              </div>
 
-            <button onClick={() => dispatch(removeFromCart(item.id))}>
-              Remove
-            </button>
-          </div>
+              <div className="cart-item-price">
+                ${(item.price * item.quantity).toFixed(2)}
+              </div>
+            </article>
+          ))}
         </div>
-      ))}
 
-      <h2>Total items: {totalItems}</h2>
-      <h2>Total price: ${totalPrice.toFixed(2)}</h2>
+        <aside className="cart-summary">
+          <h2>Order summary</h2>
 
-      <button onClick={handleCheckout}>Checkout</button>
-    </main>
-  );
+          <div className="summary-row">
+            <span>Items</span>
+            <span>{totalItems}</span>
+          </div>
+
+          <div className="summary-row summary-total">
+            <span>Total</span>
+            <span>${totalPrice.toFixed(2)}</span>
+          </div>
+
+          <button
+            className="primary-button checkout-button"
+            onClick={handleCheckout}
+          >
+            Checkout
+          </button>
+        </aside>
+      </div>
+    </div>
+  </main>
+);
 }
 
 export default Cart;
