@@ -5,14 +5,12 @@ import {
   deleteProduct,
   updateProduct,
 } from "../services/productService";
-import { seedProducts } from "../services/seedProducts";
 import type { Product } from "../types/product";
 import "../styles/products.css";
 
 function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [isImporting, setIsImporting] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
     title: "",
@@ -28,7 +26,7 @@ function Products() {
   };
 
   useEffect(() => {
-    void loadProducts();
+     loadProducts();
   }, []);
 
   const handleCreateProduct = async () => {
@@ -81,51 +79,20 @@ function Products() {
     await loadProducts();
   };
 
-  const handleImportProducts = async () => {
-    if (products.length > 0) {
-      const confirmed = window.confirm(
-        "Products already exist. Importing again may create duplicates. Continue?"
-      );
 
-      if (!confirmed) return;
-    }
-
-    try {
-      setIsImporting(true);
-
-      const count = await seedProducts();
-
-      await loadProducts();
-
-      alert(`${count} demo products imported successfully.`);
-    } catch (error) {
-      console.error(error);
-      alert("Could not import products.");
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   return (
     <main className="products-page">
       <div className="container">
-        <div className="products-header">
-          <div>
-            <p className="admin-label">Store administration</p>
-            <h1>Product Management</h1>
-            <p>
-              Create, edit and manage the products available in your store.
-            </p>
-          </div>
-
-          <button
-            className="import-button"
-            onClick={handleImportProducts}
-            disabled={isImporting}
-          >
-            {isImporting ? "Importing..." : "Import Demo Products"}
-          </button>
-        </div>
+            <div className="products-header">
+                <div>
+                    <p className="admin-label">Store administration</p>
+                    <h1>Product Management</h1>
+                    <p>
+                    Create, edit and manage the products available in your store.
+                    </p>
+                </div>
+            </div>
 
         <section className="admin-card">
           <div className="admin-card-header">
@@ -328,18 +295,10 @@ function Products() {
 
           {products.length === 0 ? (
             <div className="products-empty">
-              <h3>No products yet</h3>
-              <p>
-                Add one manually or import the demo product catalog.
-              </p>
-
-              <button
-                className="primary-button"
-                onClick={handleImportProducts}
-                disabled={isImporting}
-              >
-                {isImporting ? "Importing..." : "Import Demo Products"}
-              </button>
+                <h3>No products yet</h3>
+                <p>
+                    Use the form above to add your first product.
+                </p>
             </div>
           ) : (
             <div className="admin-products-grid">
