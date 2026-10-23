@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "admin:grant": "node scripts/set-admin.mjs",
+    "admin:remove": "node scripts/remove-admin.mjs",
     "test": "vitest",
     "test:run": "vitest run"
   },
