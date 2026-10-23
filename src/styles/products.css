@@ -311,3 +311,17 @@
     padding: 20px;
   }
 }
+/* ADMIN AREA */
+.products-page {
+  min-height: calc(100vh - 72px);
+  background:
+    linear-gradient(180deg, rgba(15,23,42,.96) 0 230px, transparent 230px),
+    radial-gradient(circle at 90% 4%, rgba(37,99,235,.35), transparent 22%),
+    var(--background);
+}
+
+.products-header { padding-top: 16px; color: white; }
+.products-header .admin-label { color: #93c5fd; }
+.products-header > div > p:last-child { color: #cbd5e1; }
+.admin-card { box-shadow: var(--shadow-md); }
+.admin-product-actions { gap: 12px; }

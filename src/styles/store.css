@@ -444,3 +444,32 @@
     grid-column: 2;
   }
 }
+/* VISUAL SEPARATION */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(247,248,250,.98) 0%, rgba(247,248,250,.90) 52%, rgba(247,248,250,.48) 100%),
+    url("../assets/hero.png") right 8% center / 330px auto no-repeat,
+    linear-gradient(135deg, #eef4ff, #f7f8fa 60%);
+  border-bottom: 1px solid var(--border);
+}
+
+.shop-section {
+  padding-top: 46px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(37,99,235,.06), transparent 22%),
+    var(--background);
+}
+
+.admin-nav-link {
+  color: #4338ca;
+  background: #eef2ff;
+}
+
+.route-status {
+  min-height: 50vh;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}

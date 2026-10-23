@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../lib/firebase/firebase";
 import "../styles/auth-styles.css";
@@ -48,7 +48,7 @@ function Register() {
         uid: user.uid,
         name,
         email,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       });
 
       setSuccess("Account created successfully!");
