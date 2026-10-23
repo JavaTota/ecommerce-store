@@ -37,7 +37,14 @@ function Login() {
       <div className="auth-card">
         <h2 className="auth-title">Login</h2>
 
-        {error && <p className="auth-error">{error}</p>}
+        {error && (
+          <div className="auth-error-box">
+            <div>
+              <strong>Login failed</strong>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="auth-form">
           <input

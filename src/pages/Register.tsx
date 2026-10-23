@@ -1,17 +1,44 @@
 import { useState, type FormEvent } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  deleteUser,
+  type User,
+} from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { FirebaseError } from "firebase/app";
+import { Link, useNavigate } from "react-router-dom";
+
 import { auth, db } from "../lib/firebase/firebase";
 import "../styles/auth-styles.css";
 
+function getRegisterErrorMessage(code: string) {
+  switch (code) {
+    case "auth/email-already-in-use":
+      return "An account already exists with this email address.";
+
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+
+    case "auth/weak-password":
+      return "Your password is too weak. Please choose a stronger password.";
+
+    case "auth/network-request-failed":
+      return "We couldn't connect to the server. Check your internet connection and try again.";
+
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait a moment and try again.";
+
+    default:
+      return "We couldn't create your account. Please try again.";
+  }
+}
 
 function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
 
@@ -19,10 +46,17 @@ function Register() {
     e.preventDefault();
 
     setError("");
-    setSuccess("");
 
-    if (!name.trim()) {
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) {
       setError("Name is required.");
+      return;
+    }
+
+    if (!cleanEmail) {
+      setError("Email is required.");
       return;
     }
 
@@ -31,31 +65,45 @@ function Register() {
       return;
     }
 
-   try {
+    let createdUser: User | null = null;
+
+    try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
+        cleanEmail,
         password
       );
 
-      const user = userCredential.user;
-      const cleanName = name.trim();
+      createdUser = userCredential.user;
 
-      await updateProfile(user, {
+      await updateProfile(createdUser, {
         displayName: cleanName,
       });
 
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
+      await setDoc(doc(db, "users", createdUser.uid), {
+        uid: createdUser.uid,
         name: cleanName,
-        email: user.email,
+        email: createdUser.email,
         createdAt: serverTimestamp(),
       });
 
       navigate("/profile");
     } catch (error) {
-      setError("Failed to create account.");
       console.error(error);
+
+      if (createdUser) {
+        try {
+          await deleteUser(createdUser);
+        } catch (rollbackError) {
+          console.error("Failed to roll back user:", rollbackError);
+        }
+      }
+
+      if (error instanceof FirebaseError) {
+        setError(getRegisterErrorMessage(error.code));
+      } else {
+        setError("We couldn't create your account. Please try again.");
+      }
     }
   };
 
@@ -64,8 +112,12 @@ function Register() {
       <div className="auth-card">
         <h2 className="auth-title">Register</h2>
 
-        {error && <p className="auth-error">{error}</p>}
-        {success && <p className="auth-success">{success}</p>}
+        {error && (
+          <div className="auth-error-box">
+            <strong>Account not created</strong>
+            <p>{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleRegister} className="auth-form">
           <input
@@ -96,6 +148,11 @@ function Register() {
             Register
           </button>
         </form>
+
+        <div className="auth-footer">
+          <span>Already have an account?</span>
+          <Link to="/login">Log in</Link>
+        </div>
       </div>
     </div>
   );
