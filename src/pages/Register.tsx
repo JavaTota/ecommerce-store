@@ -31,7 +31,7 @@ function Register() {
       return;
     }
 
-    try {
+   try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -39,19 +39,19 @@ function Register() {
       );
 
       const user = userCredential.user;
+      const cleanName = name.trim();
 
       await updateProfile(user, {
-        displayName: name,
+        displayName: cleanName,
       });
 
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        name,
-        email,
+        name: cleanName,
+        email: user.email,
         createdAt: serverTimestamp(),
       });
 
-      setSuccess("Account created successfully!");
       navigate("/profile");
     } catch (error) {
       setError("Failed to create account.");
