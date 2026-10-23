@@ -1,24 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import {
   getProductsFromFirestore,
   createProduct,
   deleteProduct,
   updateProduct,
 } from "../services/productService";
+import {
+  uploadProductImage,
+  validateProductImage,
+} from "../services/imageService";
 import type { Product } from "../types/product";
 import "../styles/products.css";
+
+type ImageMode = "url" | "upload";
+
+const emptyProduct = {
+  title: "",
+  price: 0,
+  description: "",
+  category: "",
+  image: "",
+};
 
 function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [newProduct, setNewProduct] = useState(emptyProduct);
 
-  const [newProduct, setNewProduct] = useState({
-    title: "",
-    price: 0,
-    description: "",
-    category: "",
-    image: "",
-  });
+  const [imageMode, setImageMode] = useState<ImageMode>("url");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [localPreview, setLocalPreview] = useState("");
+  const [formError, setFormError] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const imagePreview = useMemo(() => {
+    if (imageMode === "upload") return localPreview;
+    return newProduct.image.trim();
+  }, [imageMode, localPreview, newProduct.image]);
 
   const loadProducts = async () => {
     const data = await getProductsFromFirestore();
@@ -26,31 +45,120 @@ function Products() {
   };
 
   useEffect(() => {
-     loadProducts();
+    let isActive = true;
+
+    void getProductsFromFirestore().then((data) => {
+      if (isActive) setProducts(data);
+    });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
-  const handleCreateProduct = async () => {
-    if (
-      !newProduct.title ||
-      !newProduct.category ||
-      !newProduct.image ||
-      !newProduct.description
-    ) {
-      alert("Please complete all fields.");
+  useEffect(() => {
+    return () => {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    };
+  }, [localPreview]);
+
+  const resetCreateForm = () => {
+    setNewProduct(emptyProduct);
+    setImageMode("url");
+    setImageFile(null);
+    setLocalPreview("");
+  };
+
+  const switchImageMode = (mode: ImageMode) => {
+    setImageMode(mode);
+    setFormError("");
+
+    if (mode === "url") {
+      setImageFile(null);
+      setLocalPreview("");
+    } else {
+      setNewProduct((product) => ({ ...product, image: "" }));
+    }
+  };
+
+  const handleImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setFormError("");
+
+    if (!file) {
+      setImageFile(null);
+      setLocalPreview("");
       return;
     }
 
-    await createProduct(newProduct);
+    const validationError = validateProductImage(file);
+    if (validationError) {
+      setFormError(validationError);
+      event.target.value = "";
+      return;
+    }
 
-    setNewProduct({
-      title: "",
-      price: 0,
-      description: "",
-      category: "",
-      image: "",
-    });
+    setImageFile(file);
+    setLocalPreview(URL.createObjectURL(file));
+  };
 
-    await loadProducts();
+  const handleCreateProduct = async () => {
+    setFormError("");
+    setFormMessage("");
+
+    const title = newProduct.title.trim();
+    const category = newProduct.category.trim();
+    const description = newProduct.description.trim();
+
+    if (!title || !category || !description || newProduct.price <= 0) {
+      setFormError("Please complete every product field and enter a price above $0.");
+      return;
+    }
+
+    if (imageMode === "url" && !newProduct.image.trim()) {
+      setFormError("Enter an HTTPS image URL or choose Upload from computer.");
+      return;
+    }
+
+    if (imageMode === "url" && !newProduct.image.trim().startsWith("https://")) {
+      setFormError("Product image URLs must start with https://.");
+      return;
+    }
+
+    if (imageMode === "upload" && !imageFile) {
+      setFormError("Choose an image from your computer before creating the product.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const finalImageUrl =
+        imageMode === "upload" && imageFile
+          ? await uploadProductImage(imageFile)
+          : newProduct.image.trim();
+
+      await createProduct({
+        title,
+        price: Number(newProduct.price.toFixed(2)),
+        description,
+        category,
+        image: finalImageUrl,
+      });
+
+      resetCreateForm();
+      setFormMessage("Product created successfully.");
+      await loadProducts();
+    } catch (error) {
+      console.error("Failed to create product:", error);
+      setFormError(
+        imageMode === "upload"
+          ? "The product could not be created. If the image upload failed, confirm Firebase Storage is enabled and your Storage rules allow authenticated admins to upload."
+          : "The product could not be created. Please check the product details and try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -68,109 +176,203 @@ function Products() {
     if (!editingProduct) return;
 
     await updateProduct(editingProduct.id, {
-      title: editingProduct.title,
-      price: editingProduct.price,
-      description: editingProduct.description,
-      category: editingProduct.category,
-      image: editingProduct.image,
+      title: editingProduct.title.trim(),
+      price: Number(Number(editingProduct.price).toFixed(2)),
+      description: editingProduct.description.trim(),
+      category: editingProduct.category.trim(),
+      image: editingProduct.image.trim(),
     });
 
     setEditingProduct(null);
     await loadProducts();
   };
 
-
-
   return (
     <main className="products-page">
       <div className="container">
-            <div className="products-header">
-                <div>
-                    <p className="admin-label">Store administration</p>
-                    <h1>Product Management</h1>
-                    <p>
-                    Create, edit and manage the products available in your store.
-                    </p>
-                </div>
-            </div>
+        <div className="products-header">
+          <div>
+            <p className="admin-label">Store administration</p>
+            <h1>Product Management</h1>
+            <p>Create, edit and manage the products available in your store.</p>
+          </div>
+        </div>
 
         <section className="admin-card">
           <div className="admin-card-header">
             <div>
               <h2>Add product</h2>
-              <p>Create a new product in your Firestore database.</p>
+              <p>
+                Create a product using either an image URL or an image uploaded
+                from your computer.
+              </p>
             </div>
           </div>
 
+          {formError && (
+            <div className="admin-alert admin-alert-error" role="alert">
+              <strong>Product not saved</strong>
+              <span>{formError}</span>
+            </div>
+          )}
+
+          {formMessage && (
+            <div className="admin-alert admin-alert-success" role="status">
+              <strong>Success</strong>
+              <span>{formMessage}</span>
+            </div>
+          )}
+
           <div className="product-form">
             <div className="form-group">
-              <label>Title</label>
+              <label htmlFor="product-title">Title</label>
               <input
+                id="product-title"
                 placeholder="Product name"
                 value={newProduct.title}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    title: e.target.value,
-                  })
+                onChange={(event) =>
+                  setNewProduct({ ...newProduct, title: event.target.value })
                 }
               />
             </div>
 
             <div className="form-group">
-              <label>Price</label>
+              <label htmlFor="product-price">Price</label>
               <input
+                id="product-price"
                 placeholder="0.00"
                 type="number"
-                min="0"
+                min="0.01"
                 step="0.01"
-                value={newProduct.price}
-                onChange={(e) =>
+                value={newProduct.price || ""}
+                onChange={(event) =>
                   setNewProduct({
                     ...newProduct,
-                    price: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Category</label>
-              <input
-                placeholder="e.g. electronics"
-                value={newProduct.category}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    category: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Image URL</label>
-              <input
-                placeholder="https://..."
-                value={newProduct.image}
-                onChange={(e) =>
-                  setNewProduct({
-                    ...newProduct,
-                    image: e.target.value,
+                    price: Number(event.target.value),
                   })
                 }
               />
             </div>
 
             <div className="form-group form-group-full">
-              <label>Description</label>
+              <label htmlFor="product-category">Category</label>
+              <input
+                id="product-category"
+                placeholder="e.g. electronics"
+                value={newProduct.category}
+                onChange={(event) =>
+                  setNewProduct({ ...newProduct, category: event.target.value })
+                }
+              />
+            </div>
+
+            <div className="form-group form-group-full image-source-section">
+              <span className="form-label">Product image</span>
+
+              <div className="image-source-options" role="radiogroup" aria-label="Image source">
+                <label
+                  className={`image-source-option ${
+                    imageMode === "url" ? "selected" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="image-source"
+                    checked={imageMode === "url"}
+                    onChange={() => switchImageMode("url")}
+                  />
+                  <span>
+                    <strong>Image URL</strong>
+                    <small>Paste an existing HTTPS image address</small>
+                  </span>
+                </label>
+
+                <label
+                  className={`image-source-option ${
+                    imageMode === "upload" ? "selected" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="image-source"
+                    checked={imageMode === "upload"}
+                    onChange={() => switchImageMode("upload")}
+                  />
+                  <span>
+                    <strong>Upload from computer</strong>
+                    <small>JPG, PNG or WebP, up to 5 MB</small>
+                  </span>
+                </label>
+              </div>
+
+              {imageMode === "url" ? (
+                <div className="image-input-panel">
+                  <label htmlFor="product-image-url">Image URL</label>
+                  <input
+                    id="product-image-url"
+                    type="url"
+                    placeholder="https://..."
+                    value={newProduct.image}
+                    onChange={(event) =>
+                      setNewProduct({ ...newProduct, image: event.target.value })
+                    }
+                  />
+                </div>
+              ) : (
+                <div className="image-upload-area">
+                  <input
+                    id="product-image-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageFileChange}
+                    hidden
+                  />
+                  <label
+                    htmlFor="product-image-upload"
+                    className="image-upload-button"
+                  >
+                    Choose image
+                  </label>
+                  <span className="selected-file-name">
+                    {imageFile ? imageFile.name : "No image selected"}
+                  </span>
+                </div>
+              )}
+
+              <div className="product-image-preview">
+                <div className="preview-heading">
+                  <strong>Image preview</strong>
+                  <span>Preview before saving the product</span>
+                </div>
+
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="New product preview"
+                    onError={() => {
+                      if (imageMode === "url") {
+                        setFormError("The image URL could not be loaded. Check the URL and try again.");
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="preview-placeholder">
+                    Your selected product image will appear here.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group form-group-full">
+              <label htmlFor="product-description">Description</label>
               <textarea
+                id="product-description"
                 placeholder="Product description"
                 value={newProduct.description}
-                onChange={(e) =>
+                onChange={(event) =>
                   setNewProduct({
                     ...newProduct,
-                    description: e.target.value,
+                    description: event.target.value,
                   })
                 }
               />
@@ -179,9 +381,11 @@ function Products() {
             <div className="form-actions">
               <button
                 className="primary-button"
+                type="button"
+                disabled={isSaving}
                 onClick={handleCreateProduct}
               >
-                Create Product
+                {isSaving ? "Creating…" : "Create Product"}
               </button>
             </div>
           </div>
@@ -208,10 +412,10 @@ function Products() {
                 <label>Title</label>
                 <input
                   value={editingProduct.title}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setEditingProduct({
                       ...editingProduct,
-                      title: e.target.value,
+                      title: event.target.value,
                     })
                   }
                 />
@@ -221,11 +425,13 @@ function Products() {
                 <label>Price</label>
                 <input
                   type="number"
+                  min="0.01"
+                  step="0.01"
                   value={editingProduct.price}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setEditingProduct({
                       ...editingProduct,
-                      price: Number(e.target.value),
+                      price: Number(event.target.value),
                     })
                   }
                 />
@@ -235,10 +441,10 @@ function Products() {
                 <label>Category</label>
                 <input
                   value={editingProduct.category}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setEditingProduct({
                       ...editingProduct,
-                      category: e.target.value,
+                      category: event.target.value,
                     })
                   }
                 />
@@ -247,24 +453,30 @@ function Products() {
               <div className="form-group">
                 <label>Image URL</label>
                 <input
+                  type="url"
                   value={editingProduct.image}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setEditingProduct({
                       ...editingProduct,
-                      image: e.target.value,
+                      image: event.target.value,
                     })
                   }
                 />
+              </div>
+
+              <div className="form-group form-group-full edit-image-preview">
+                <span className="form-label">Current image preview</span>
+                <img src={editingProduct.image} alt={editingProduct.title} />
               </div>
 
               <div className="form-group form-group-full">
                 <label>Description</label>
                 <textarea
                   value={editingProduct.description}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setEditingProduct({
                       ...editingProduct,
-                      description: e.target.value,
+                      description: event.target.value,
                     })
                   }
                 />
@@ -287,18 +499,15 @@ function Products() {
             <div>
               <h2>Inventory</h2>
               <p>
-                {products.length}{" "}
-                {products.length === 1 ? "product" : "products"}
+                {products.length} {products.length === 1 ? "product" : "products"}
               </p>
             </div>
           </div>
 
           {products.length === 0 ? (
             <div className="products-empty">
-                <h3>No products yet</h3>
-                <p>
-                    Use the form above to add your first product.
-                </p>
+              <h3>No products yet</h3>
+              <p>Use the form above to add your first product.</p>
             </div>
           ) : (
             <div className="admin-products-grid">
@@ -316,9 +525,7 @@ function Products() {
                     <span className="admin-product-category">
                       {product.category}
                     </span>
-
                     <h3>{product.title}</h3>
-
                     <p className="admin-product-price">
                       ${Number(product.price).toFixed(2)}
                     </p>
@@ -330,7 +537,6 @@ function Products() {
                       >
                         Edit
                       </button>
-
                       <button
                         className="delete-button"
                         onClick={() => handleDeleteProduct(product.id)}

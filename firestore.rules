@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(uid) { return isAuthenticated() && request.auth.uid == uid; }
+    function isAdmin() { return isAuthenticated() && request.auth.token.get('admin', false) == true; }
+    function validString(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+    function uidUnchanged() { return request.resource.data.uid == request.auth.uid; }
+    function uidNotModified() { return request.resource.data.uid == resource.data.uid; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'name', 'email', 'createdAt', 'address'])
+        && validString(data.uid, 1, 128)
+        && validString(data.name, 1, 120)
+        && validString(data.email, 1, 254)
+        && data.email == request.auth.token.email
+        && data.createdAt is timestamp
+        && (!('address' in data) || validString(data.address, 0, 500));
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['title', 'price', 'category', 'description', 'image'])
+        && data.keys().hasOnly(['title', 'price', 'category', 'description', 'image'])
+        && validString(data.title, 1, 150)
+        && validString(data.category, 1, 80)
+        && validString(data.description, 1, 2000)
+        && validString(data.image, 1, 2048)
+        && data.image.matches('https://.+')
+        && data.price is number
+        && data.price >= 0.01
+        && data.price <= 1000000
+        && data.price == math.round(data.price * 100) / 100.0;
+    }
+
+    function validLine(item) {
+      return item is map
+        && item.id is string
+        && item.id.matches('[^/]{1,128}')
+        && item.quantity is int
+        && item.quantity >= 1
+        && item.quantity <= 99
+        && matchesCatalog(item);
+    }
+
+    function matchesCatalog(item) {
+      let p = get(/databases/$(database)/documents/products/$(item.id)).data;
+      return p.title is string && p.title.size() <= 150
+        && p.category is string && p.category.size() <= 80
+        && p.description is string && p.description.size() <= 2000
+        && p.image is string && p.image.size() <= 2048 && p.image.matches('https://.+')
+        && p.price is number && p.price >= 0.01 && p.price <= 1000000
+        && item.keys().hasOnly(['id', 'quantity', 'title', 'category', 'description', 'image', 'price'])
+        && item.diff(p).affectedKeys().hasOnly(['id', 'quantity']);
+    }
+
+    function lineTotals(items, index) {
+      return items.size() <= index ? [0, 0] : checkedTotals(items[index]);
+    }
+
+    function checkedTotals(item) {
+      return validLine(item)
+        ? [math.round(item.price * 100) * item.quantity, item.quantity]
+        : [-1, 0];
+    }
+
+    function correctTotals(data) {
+      let a = lineTotals(data.products, 0);
+      let b = lineTotals(data.products, 1);
+      let c = lineTotals(data.products, 2);
+      let d = lineTotals(data.products, 3);
+
+      return a[0] >= 0 && b[0] >= 0 && c[0] >= 0 && d[0] >= 0
+        && data.totalPrice == (a[0] + b[0] + c[0] + d[0]) / 100.0
+        && data.totalItems == a[1] + b[1] + c[1] + d[1];
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['userId', 'products', 'totalItems', 'totalPrice', 'status', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'products', 'totalItems', 'totalPrice', 'status', 'createdAt'])
+        && validString(data.userId, 1, 128)
+        && isOwner(data.userId)
+        && data.status == 'submitted'
+        && data.createdAt is timestamp
+        && data.createdAt == request.time
+        && data.products is list
+        && data.products.size() >= 1
+        && data.products.size() <= 4
+        && data.totalItems is int
+        && data.totalPrice is number
+        && correctTotals(data);
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && uidUnchanged()
+        && isValidUser(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner(uid)
+        && uidNotModified()
+        && isValidUser(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'address']);
+      allow delete: if isOwner(uid);
+    }
+
+    match /products/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /orders/{id} {
+      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
+      allow list: if isOwner(resource.data.userId);
+      allow create: if isValidOrder(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

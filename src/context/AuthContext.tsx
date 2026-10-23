@@ -1,20 +1,7 @@
-import { useEffect, useContext, useState, createContext, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChanged, getIdTokenResult, type User } from "firebase/auth";
 import { auth } from "../lib/firebase/firebase";
-
-interface AuthContextType {
-  user: User | null;
-  isAdmin: boolean;
-  loading: boolean;
-  setUser: (user: User | null) => void;
-}
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAdmin: false,
-  loading: true,
-  setUser: () => {},
-});
+import { AuthContext } from "./auth-context";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,7 +31,3 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </AuthContext.Provider>
   );
 };
-
-export function useAuth() {
-  return useContext(AuthContext);
-}

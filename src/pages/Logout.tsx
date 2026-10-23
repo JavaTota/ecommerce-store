@@ -1,7 +1,7 @@
 import {useEffect} from 'react';
 import {signOut} from 'firebase/auth';
 import { auth } from '../lib/firebase/firebase';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 function Logout() {

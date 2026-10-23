@@ -325,3 +325,217 @@
 .products-header > div > p:last-child { color: #cbd5e1; }
 .admin-card { box-shadow: var(--shadow-md); }
 .admin-product-actions { gap: 12px; }
+
+/* IMAGE SOURCE + PREVIEW */
+.form-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.image-source-section {
+  padding-top: 4px;
+}
+
+.image-source-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.image-source-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.image-source-option:hover {
+  border-color: #bfdbfe;
+}
+
+.image-source-option.selected {
+  border-color: var(--primary);
+  background: #eff6ff;
+  color: var(--text);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.image-source-option input {
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+
+.image-source-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.image-source-option strong {
+  font-size: 0.9rem;
+}
+
+.image-source-option small {
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.image-input-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.image-input-panel label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.image-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.image-upload-button {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-radius: 9px;
+  background: var(--primary);
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.image-upload-button:hover {
+  background: var(--primary-hover);
+}
+
+.selected-file-name {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-image-preview {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.65fr) minmax(220px, 1.35fr);
+  gap: 18px;
+  align-items: center;
+  min-height: 230px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.preview-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.preview-heading strong {
+  font-size: 1rem;
+}
+
+.preview-heading span {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.product-image-preview img,
+.preview-placeholder {
+  width: 100%;
+  height: 200px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+}
+
+.product-image-preview img {
+  object-fit: contain;
+  padding: 12px;
+}
+
+.preview-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.edit-image-preview img {
+  width: min(260px, 100%);
+  height: 180px;
+  object-fit: contain;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.admin-alert {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.admin-alert-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+}
+
+.admin-alert-success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 750px) {
+  .image-source-options,
+  .product-image-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .image-upload-area {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -4,7 +4,7 @@ import { FirebaseError } from "firebase/app";
 import { Link, useNavigate } from "react-router-dom";
 
 import { auth } from "../lib/firebase/firebase";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import "../styles/auth-styles.css";
 
 function getLoginErrorMessage(code: string) {

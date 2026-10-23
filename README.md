@@ -1,439 +1,525 @@
-# Advanced E-Commerce Store
+# FakeStore — React + Firebase E-Commerce Demo
 
-## Overview
+A portfolio e-commerce application built with **React, TypeScript, Redux Toolkit, Firebase Authentication, Cloud Firestore, and Firebase Storage**.
 
-This project is a full-stack E-Commerce application built with React, TypeScript, Redux Toolkit, React Query, Firebase Authentication, and Firestore.
+The project demonstrates two separate application roles:
 
-The application allows users to:
+- **Customer / general user** — shops products, manages a cart, maintains a profile, and submits demo orders.
+- **Administrator** — receives the normal customer experience plus a protected **Admin Panel** for product management.
 
-* Register and authenticate using Firebase Authentication
-* Log in and log out securely
-* View products stored in Firestore
-* Create, update, and delete products
-* Add products to a shopping cart
-* Place orders
-* View order history
-* Manage their user profile
-* Store and retrieve data from Firebase Firestore
-
-This project was developed as part of the Advanced E-Commerce Store assignment and demonstrates modern frontend development practices, cloud database integration, state management, testing, and CI/CD automation.
+The project started with Fake Store API data and was migrated to Firebase so the catalog, users, and orders are stored in the application's own backend services.
 
 ---
 
-# Technologies Used
+## Main Features
 
-## Frontend
+### Customer experience
 
-* React
-* TypeScript
-* Vite
-* React Router
-* Redux Toolkit
-* React Query
+A general user can:
 
-## Backend Services
+- browse the storefront without administrator controls;
+- filter products by category;
+- add products to the Redux-powered cart;
+- increase/decrease quantities and remove items;
+- register with email/password;
+- log in and log out;
+- reset a forgotten password;
+- view and update their profile and shipping address;
+- delete their own account;
+- submit a demo order when authenticated.
 
-* Firebase Authentication
-* Firebase Firestore
+### Administrator experience
 
-## Testing
+An administrator can do everything a customer can, plus access:
 
-* Vitest
-* React Testing Library
+```text
+/admin/products
+```
 
-## DevOps
+The Admin Panel allows the administrator to:
 
-* GitHub Actions CI/CD
+- create products;
+- edit products;
+- delete products;
+- view the current inventory;
+- enter a product image using an HTTPS URL;
+- **or upload an image from the computer**;
+- preview the image before saving the product.
 
----
+The upload flow is:
 
-# Features
+```text
+Local image
+   ↓
+Firebase Storage
+   ↓
+HTTPS download URL
+   ↓
+Firestore products/{id}.image
+   ↓
+Storefront
+```
 
-## Authentication
-
-Users can:
-
-* Register with email and password
-* Log in
-* Log out
-* Update profile information
-* Delete their account
-
-Authentication is managed using Firebase Authentication.
-
----
-
-## User Management
-
-Each registered user automatically receives a Firestore document containing:
-
-* uid
-* name
-* email
-* creation date
-
-Users can:
-
-* View profile information
-* Update profile details
-* Delete their account
+The browser never stores a local path such as `C:\Users\...\image.jpg` in Firestore. A local image is uploaded first and the resulting HTTPS URL is stored with the product.
 
 ---
 
-## Product Management
+# Role-Based Access
 
-The original Fake Store API was replaced with Firebase Firestore.
+The application does **not** decide administrator access by hard-coding an email address in React.
 
-Users can:
-
-* View all products
-* Create products
-* Update products
-* Delete products
-
-Products are stored inside the Firestore `products` collection.
-
-Example Product Structure:
+Administrator status is represented by the Firebase Authentication custom claim:
 
 ```json
 {
-  "title": "Laptop",
-  "price": 999.99,
-  "description": "Gaming Laptop",
-  "category": "Electronics",
-  "image": "image-url"
+  "admin": true
 }
+```
+
+The role is checked in three places:
+
+1. **AuthContext** reads the Firebase ID token and exposes `isAdmin`.
+2. **AdminRoute** prevents non-admin users from rendering protected admin pages.
+3. **Firebase security rules** remain the real backend authorization layer for protected writes.
+
+This means hiding the Admin Panel in the navbar is only a UI convenience; backend rules are responsible for preventing unauthorized writes.
+
+---
+
+# How to Access the Admin Panel
+
+## 1. Create the admin user normally
+
+Register the account through the application first so it exists in Firebase Authentication.
+
+## 2. Download a Firebase service-account key
+
+In Firebase Console:
+
+```text
+Project Settings
+→ Service accounts
+→ Generate new private key
+```
+
+Keep this JSON file private. Never put it in `src/`, commit it to GitHub, or expose it through Vite environment variables.
+
+The repository `.gitignore` blocks common Firebase Admin service-account filenames.
+
+## 3. Install dependencies
+
+```bash
+npm install
+```
+
+`firebase-admin` is included as a development dependency.
+
+## 4. Point the Admin SDK at the key
+
+### Git Bash on Windows
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="/c/Users/YOUR_USER/Downloads/your-firebase-adminsdk.json"
+```
+
+Verify it:
+
+```bash
+echo $GOOGLE_APPLICATION_CREDENTIALS
+ls "$GOOGLE_APPLICATION_CREDENTIALS"
+```
+
+### PowerShell
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\Users\YOUR_USER\Downloads\your-firebase-adminsdk.json"
+```
+
+## 5. Grant the claim
+
+```bash
+npm run admin:grant -- admin@example.com
+```
+
+The script is located at:
+
+```text
+scripts/set-admin.mjs
+```
+
+It looks up the Firebase Authentication user and merges:
+
+```json
+{
+  "admin": true
+}
+```
+
+with any existing custom claims.
+
+## 6. Refresh the user's Firebase token
+
+Log out of the website and log back in.
+
+The navbar will then display:
+
+```text
+Admin Panel
+```
+
+and the account can access:
+
+```text
+/admin/products
 ```
 
 ---
 
-## Shopping Cart
+# Firebase Storage Setup
 
-The cart is managed using Redux Toolkit.
+The Admin Panel supports local image uploads through Firebase Storage.
 
-Features include:
+The application exports Storage from:
 
-* Add to cart
-* Remove from cart
-* Increase quantity
-* Decrease quantity
-* Calculate totals automatically
+```text
+src/lib/firebase/firebase.ts
+```
+
+and image upload logic is isolated in:
+
+```text
+src/services/imageService.ts
+```
+
+The repository also contains `firestore.rules`, `storage.rules`, and `firebase.json` so the authorization model is visible in the codebase.
+
+The supplied rules are designed so that:
+
+- product images are publicly readable;
+- only authenticated users with `admin: true` may upload product images;
+- files must be JPEG, PNG, or WebP;
+- files must be below 5 MB.
+
+Publish equivalent rules in Firebase Console / Firebase Storage before using uploads. Firebase Storage must also be enabled for the project; billing requirements can depend on the Firebase project configuration and current Firebase plan requirements.
+
+If Storage is not enabled, administrators can still use the **Image URL** option.
 
 ---
 
-## Order Management
+# Authentication Flow
 
-When a user checks out:
+## Registration
 
-1. Cart items are collected
-2. User information is attached
-3. Order is stored in Firestore
+`Register.tsx` performs the following steps:
 
-Each order contains:
+```text
+Validate form
+   ↓
+Firebase Authentication creates user
+   ↓
+Firebase displayName is updated
+   ↓
+Firestore users/{uid} profile is created
+   ↓
+Navigate to Profile
+```
 
-* User ID
-* Products purchased
-* Quantities
-* Total price
-* Creation date
+The Firestore profile contains:
 
-Users can later view their order history.
+```json
+{
+  "uid": "firebase-auth-uid",
+  "name": "Example User",
+  "email": "user@example.com",
+  "createdAt": "server timestamp"
+}
+```
+
+The registration code uses `serverTimestamp()` to match the Firestore security rules.
+
+If profile creation fails after the Authentication account has been created, the registration component attempts to delete the newly created Authentication user. This avoids leaving a partially created account.
+
+Firebase error codes are translated into human-readable messages such as:
+
+```text
+An account already exists with this email address.
+```
+
+instead of exposing raw codes such as:
+
+```text
+auth/email-already-in-use
+```
+
+## Login
+
+`Login.tsx` uses Firebase email/password authentication and converts common Firebase errors into customer-friendly messages.
+
+It also links to:
+
+- registration;
+- password reset.
+
+## Password reset
+
+`ForgotPassword.tsx` uses Firebase's password-reset email flow and is available at:
+
+```text
+/forgot-password
+```
+
+---
+
+# Firestore Data Model
+
+## `users`
+
+```text
+users/{uid}
+├── uid
+├── name
+├── email
+├── address        optional
+└── createdAt
+```
+
+## `products`
+
+```text
+products/{productId}
+├── title
+├── price
+├── category
+├── description
+└── image          HTTPS URL
+```
+
+Example:
+
+```json
+{
+  "title": "Classic Backpack",
+  "price": 49.99,
+  "category": "accessories",
+  "description": "A lightweight everyday backpack.",
+  "image": "https://..."
+}
+```
+
+## `orders`
+
+```text
+orders/{orderId}
+├── userId
+├── products[]
+├── totalItems
+├── totalPrice
+├── status: "submitted"
+└── createdAt
+```
+
+Order creation uses `serverTimestamp()` and rounds totals to cents before writing the order.
+
+---
+
+# Application Data Flow
+
+## Storefront
+
+```text
+Cloud Firestore
+     ↓
+productService.ts
+     ↓
+Home.tsx
+     ↓
+ProductCard.tsx
+     ↓
+Redux cart
+```
+
+## Product administration
+
+```text
+AdminRoute
+    ↓
+Products.tsx
+    ↓
+URL image ───────────────┐
+                         ├─→ productService → Firestore
+Computer image → Storage ┘
+```
+
+## Cart
+
+The cart is application state managed by Redux Toolkit:
+
+```text
+ProductCard
+    ↓
+addToCart()
+    ↓
+cartSlice.ts
+    ↓
+Cart.tsx
+```
+
+This keeps transient shopping-cart state separate from persistent Firestore data.
 
 ---
 
 # Project Structure
 
 ```text
-src/
-│
-├── assets/
-├── components/
-├── context/
-│   └── AuthContext.tsx
-│
-├── lib/
-│   └── firebase/
-│       └── firebase.ts
-│
-├── pages/
-│   ├── Home.tsx
-│   ├── Login.tsx
-│   ├── Register.tsx
-│   ├── Profile.tsx
-│   ├── Products.tsx
-│   ├── Cart.tsx
-│   └── Logout.tsx
-│
-├── redux/
-│   ├── cartSlice.ts
-│   └── store.ts
-│
-├── services/
-│   ├── productService.ts
-│   ├── userService.ts
-│   └── orderService.ts
-│
-├── tests/
-│
-└── styles/
+.
+├── public/
+├── scripts/
+│   └── set-admin.mjs              # Grants Firebase admin custom claim
+├── src/
+│   ├── assets/
+│   │   └── hero.png
+│   ├── components/
+│   │   ├── AdminRoute.tsx         # Protects administrator pages
+│   │   ├── Navbar.tsx             # Role-aware navigation
+│   │   └── ProductCard.tsx        # Customer product card
+│   ├── context/
+│   │   ├── AuthContext.tsx        # Auth provider + admin-claim state
+│   │   ├── auth-context.ts        # Context type/default value
+│   │   └── useAuth.ts             # Reusable authentication hook
+│   ├── lib/
+│   │   └── firebase/
+│   │       └── firebase.ts        # Auth, Firestore and Storage initialization
+│   ├── pages/
+│   │   ├── Cart.tsx
+│   │   ├── ForgotPassword.tsx
+│   │   ├── Home.tsx
+│   │   ├── Login.tsx
+│   │   ├── Logout.tsx
+│   │   ├── Products.tsx           # Admin product management
+│   │   ├── Profile.tsx
+│   │   └── Register.tsx
+│   ├── redux/
+│   │   ├── cartSlice.ts
+│   │   └── store.ts
+│   ├── services/
+│   │   ├── imageService.ts        # Storage validation/upload
+│   │   ├── orderService.ts
+│   │   ├── productService.ts
+│   │   └── userService.ts
+│   ├── styles/
+│   │   ├── auth-styles.css
+│   │   ├── products.css
+│   │   └── store.css
+│   ├── tests/
+│   ├── types/
+│   │   └── product.ts
+│   ├── App.tsx                    # Routes
+│   ├── index.css                  # Global theme/tokens
+│   └── main.tsx
+├── firebase.json
+├── firestore.rules
+├── storage.rules
+├── package.json
+└── README.md
 ```
 
 ---
 
-# Challenges Faced and Solutions
+# Routes
 
-## 1. Firebase Configuration Exposure
+| Route | Access | Purpose |
+|---|---|---|
+| `/` | Public | Customer storefront |
+| `/cart` | Public, login required to checkout | Shopping cart |
+| `/login` | Public | Login |
+| `/register` | Public | Create account |
+| `/forgot-password` | Public | Password reset |
+| `/profile` | Authenticated user | User profile |
+| `/logout` | Authenticated user | Logout |
+| `/admin/products` | **Admin only** | Product CRUD + image upload |
 
-### Problem
-
-Initially, Firebase credentials were committed directly into the project and pushed to GitHub.
-
-### Solution
-
-I:
-
-* Moved credentials into environment variables
-* Created a `.env` file
-* Added `.env` to `.gitignore`
-* Rotated Firebase keys after accidental publication
-
-This improved security and followed industry best practices.
+A legacy `/products` route is also protected by `AdminRoute` and points to the same product-management screen.
 
 ---
 
-## 2. TypeScript Type Errors
+# Environment Variables
 
-### Problem
+Create a `.env` file in the project root:
 
-TypeScript generated several errors related to:
-
-* React event types
-* Context initialization
-* Product interfaces
-* Firestore document typing
-
-Examples included:
-
-```typescript
-Argument of type 'string' is not assignable to parameter of type 'number'
+```env
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
 ```
 
-and
+Do not commit `.env`.
 
-```typescript
-Conversion of type '{ id: string }[]' to type 'Product[]'
+Firebase web configuration identifies the Firebase project; authorization is enforced by Authentication and Firebase security rules. Service-account private keys are different and must never be exposed to the browser.
+
+---
+
+# Run Locally
+
+```bash
+npm install
+npm run dev
 ```
 
-### Solution
+Production build:
 
-I:
-
-* Added proper interfaces
-* Used type-only imports
-* Added generic types where necessary
-* Refactored Firestore data mapping
-
-This improved type safety and reduced runtime errors.
-
----
-
-## 3. React Context Issues
-
-### Problem
-
-While implementing AuthContext, TypeScript reported:
-
-```typescript
-'user' is declared but its value is never read
+```bash
+npm run build
 ```
 
-### Solution
+Tests:
 
-I modified the default context values and removed unused parameters.
-
-This allowed the project to build successfully in CI environments.
-
----
-
-## 4. Firebase Authentication Errors
-
-### Problem
-
-During testing and CI execution, Firebase returned:
-
-```text
-FirebaseError: auth/invalid-api-key
+```bash
+npm run test:run
 ```
 
-### Cause
+---
 
-GitHub Actions did not have access to the local `.env` file.
+# UI Design
 
-### Solution
+The interface uses shared CSS variables for colors, surfaces, shadows and radii. The customer storefront and administrator area are intentionally visually distinct:
 
-I:
-
-* Added Firebase environment variables to GitHub Secrets
-* Refactored test execution to avoid relying on production Firebase configuration
-
-This separated testing from production credentials.
+- the storefront uses a light hero with background artwork and a product-focused catalog;
+- the Admin Panel uses a darker administration header/background;
+- destructive actions such as account/product deletion use separate danger styling;
+- forms use clear spacing and responsive layouts;
+- product image previews make catalog changes visible before saving.
 
 ---
 
-## 5. Jest Configuration Problems
+# Security Notes
 
-### Problem
+This project treats frontend route protection as a UX layer, not as the security boundary.
 
-I initially attempted to use Jest with a Vite project.
+Important security decisions include:
 
-This resulted in multiple issues:
-
-* import.meta.env errors
-* CommonJS vs ES Module conflicts
-* ts-jest configuration problems
-* JSX compilation errors
-
-### Solution
-
-I migrated testing to Vitest, which is designed specifically for Vite applications.
-
-Benefits included:
-
-* Native Vite compatibility
-* Simpler configuration
-* Faster test execution
-* Better TypeScript support
+- Firebase Authentication for identity;
+- custom claims for administrator roles;
+- Firestore rules for database authorization;
+- Storage rules for administrator-only image uploads;
+- service-account keys excluded from source control;
+- `.env` excluded from source control;
+- no hard-coded administrator email in the React application.
 
 ---
 
-## 6. Snapshot Testing Challenges
+# Possible Future Improvements
 
-### Problem
-
-Components using:
-
-* Firebase
-* React Router
-* Authentication Context
-
-caused snapshot tests to fail.
-
-### Solution
-
-I:
-
-* Wrapped components in MemoryRouter where required
-* Mocked dependencies
-* Simplified component rendering
-
-This allowed snapshot tests to execute correctly.
-
----
-
-## 7. GitHub Actions CI/CD Issues
-
-### Problem
-
-The CI pipeline failed because:
-
-```text
-Could not read package.json
-```
-
-### Cause
-
-The project was located inside:
-
-```text
-advanced-ecommerce-store/
-└── ecommerce-app/
-```
-
-while GitHub Actions executed commands from the repository root.
-
-### Solution
-
-I configured the workflow to use:
-
-```yaml
-working-directory: ecommerce-app
-```
-
-This allowed GitHub Actions to correctly locate package.json and execute npm commands.
-
----
-
-## 8. Firestore CRUD Migration
-
-### Problem
-
-The original application relied on Fake Store API endpoints.
-
-### Solution
-
-I migrated all CRUD operations to Firestore:
-
-* Create Product
-* Read Products
-* Update Product
-* Delete Product
-
-This provided persistent cloud storage and real-time data management.
-
----
-
-# CI/CD Pipeline
-
-The project uses GitHub Actions.
-
-Pipeline steps:
-
-1. Checkout Repository
-2. Setup Node.js
-3. Install Dependencies
-4. Run Tests
-5. Build Application
-
-This ensures every push and pull request is automatically validated.
-
----
-
-# Future Improvements
-
-Potential future enhancements include:
-
-* Product image uploads using Firebase Storage
-* Product search functionality
-* Category filtering
-* Admin dashboard
-* Stripe payment integration
-* Order status tracking
-* User role management
-* Product reviews and ratings
-
----
-
-# Lessons Learned
-
-This project significantly improved my understanding of:
-
-* Firebase Authentication
-* Firestore CRUD operations
-* React Context API
-* Redux Toolkit
-* React Query
-* TypeScript type safety
-* Environment variable management
-* Snapshot testing
-* CI/CD pipelines
-* GitHub Actions automation
-
-It also provided valuable experience debugging real-world integration issues involving authentication, cloud databases, testing frameworks, and deployment pipelines.
-
----
-
-# Author
-
-Jahvantè Tota
-
-Built using React, TypeScript, Firebase, Redux Toolkit, React Query, Vitest, and GitHub Actions.
+- order-history UI;
+- product search and sorting;
+- product detail pages;
+- pagination;
+- inventory/stock quantities;
+- upload progress indicators;
+- deleting unused Storage images when products are deleted;
+- payment-provider integration;
+- email verification;
+- stronger admin auditing/logging;
+- automated Firestore/Storage rule tests.

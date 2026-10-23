@@ -8,7 +8,7 @@ import {
   decreaseQuantity,
 } from "../redux/cartSlice";
 import { createOrder } from "../services/orderService";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import "../styles/store.css";
 
 function Cart() {
@@ -32,6 +32,13 @@ function Cart() {
   const handleCheckout = async () => {
     if (!user) {
       setCheckoutMessage("Please login before checking out.");
+      return;
+    }
+
+    if (cartItems.length > 4) {
+      setCheckoutMessage(
+        "This demo checkout supports up to 4 different products per order. Remove an item and try again."
+      );
       return;
     }
 

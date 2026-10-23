@@ -90,3 +90,32 @@
   .profile-card { padding: 28px 22px; }
   .profile-actions { flex-direction: column; align-items: stretch; }
 }
+
+.auth-intro {
+  margin: -10px 0 22px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.55;
+}
+
+.auth-success-box {
+  width: 100%;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  border-radius: 10px;
+  color: #166534;
+  text-align: left;
+}
+
+.auth-success-box strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.auth-success-box p {
+  margin: 0;
+  line-height: 1.5;
+}

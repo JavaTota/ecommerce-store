@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { updateProfile, deleteUser } from "firebase/auth";
 import { doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase/firebase";

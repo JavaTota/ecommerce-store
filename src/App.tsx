@@ -9,6 +9,7 @@ import Register from "./pages/Register.tsx";
 import Login from "./pages/Login.tsx";
 import Products from "./pages/Products.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/profile" element={<Profile />} />
         <Route
