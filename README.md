@@ -523,3 +523,29 @@ Important security decisions include:
 - email verification;
 - stronger admin auditing/logging;
 - automated Firestore/Storage rule tests.
+
+## Bulk product import
+
+Administrators can add catalog data one product at a time or import a spreadsheet from **Admin Panel → Product Management**.
+
+Supported files:
+
+- `.xlsx` — modern Excel workbooks
+- `.xls` — legacy Excel workbooks
+- `.csv` — comma-separated values
+
+The importer reads the first worksheet and expects these product fields:
+
+| Column | Required | Rules |
+| --- | --- | --- |
+| `title` | Yes | 1–150 characters |
+| `price` | Yes | USD number from 0.01 to 1,000,000 with at most two decimals |
+| `category` | Yes | 1–80 characters |
+| `description` | Yes | 1–2,000 characters |
+| `image` | Yes | HTTPS image URL |
+
+Common header variants such as `name`, `product_name`, `desc`, and `image_url` are accepted. The admin UI parses the spreadsheet locally, displays a row-by-row preview, marks invalid rows, and only enables the import button when every row passes validation. A maximum of 200 products can be imported in one file.
+
+The **Download template** button creates a starter CSV with the correct headers and an example product. Bulk-import images use URLs; individual products can still use the separate Firebase Storage image-upload workflow.
+
+Spreadsheet parsing uses SheetJS CE 0.20.3 from the official SheetJS CDN package.

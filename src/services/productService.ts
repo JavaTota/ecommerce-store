@@ -5,6 +5,7 @@ import {
     doc,
     updateDoc,
     deleteDoc,
+    writeBatch,
 } from "firebase/firestore";
 import { db } from "../lib/firebase/firebase";
 import type { Product } from "../types/product";
@@ -24,6 +25,22 @@ export const createProduct = async (
     product: Omit<Product, "id">
 ): Promise<void> => {
     await addDoc(productsCollection, product);
+};
+
+
+export const createProducts = async (
+    products: Omit<Product, "id">[]
+): Promise<void> => {
+    if (products.length === 0) return;
+
+    const batch = writeBatch(db);
+
+    products.forEach((product) => {
+        const productRef = doc(productsCollection);
+        batch.set(productRef, product);
+    });
+
+    await batch.commit();
 };
 
 export const updateProduct = async (

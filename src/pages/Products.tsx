@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import {
   getProductsFromFirestore,
   createProduct,
+  createProducts,
   deleteProduct,
   updateProduct,
 } from "../services/productService";
@@ -10,6 +11,11 @@ import {
   validateProductImage,
 } from "../services/imageService";
 import type { Product } from "../types/product";
+import {
+  downloadProductImportTemplate,
+  parseProductImportFile,
+  type ProductImportRow,
+} from "../services/productImportService";
 import "../styles/products.css";
 
 type ImageMode = "url" | "upload";
@@ -34,10 +40,26 @@ function Products() {
   const [formMessage, setFormMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  const [importRows, setImportRows] = useState<ProductImportRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+
   const imagePreview = useMemo(() => {
     if (imageMode === "upload") return localPreview;
     return newProduct.image.trim();
   }, [imageMode, localPreview, newProduct.image]);
+
+  const validImportRows = useMemo(
+    () => importRows.filter((row) => row.errors.length === 0),
+    [importRows]
+  );
+
+  const invalidImportRows = useMemo(
+    () => importRows.filter((row) => row.errors.length > 0),
+    [importRows]
+  );
 
   const loadProducts = async () => {
     const data = await getProductsFromFirestore();
@@ -158,6 +180,71 @@ function Products() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImportFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    setImportError("");
+    setImportMessage("");
+    setImportRows([]);
+    setImportFileName("");
+
+    if (!file) return;
+
+    try {
+      const rows = await parseProductImportFile(file);
+      setImportRows(rows);
+      setImportFileName(file.name);
+    } catch (error) {
+      console.error("Failed to parse product import file:", error);
+      setImportError(
+        error instanceof Error
+          ? error.message
+          : "The product file could not be read."
+      );
+      event.target.value = "";
+    }
+  };
+
+  const handleBulkImport = async () => {
+    setImportError("");
+    setImportMessage("");
+
+    if (importRows.length === 0) {
+      setImportError("Choose a spreadsheet and review the preview first.");
+      return;
+    }
+
+    if (invalidImportRows.length > 0) {
+      setImportError(
+        `Fix the ${invalidImportRows.length} invalid row${
+          invalidImportRows.length === 1 ? "" : "s"
+        } before importing.`
+      );
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      await createProducts(validImportRows.map((row) => row.product));
+      setImportMessage(
+        `${validImportRows.length} product${
+          validImportRows.length === 1 ? "" : "s"
+        } imported successfully.`
+      );
+      setImportRows([]);
+      setImportFileName("");
+      await loadProducts();
+    } catch (error) {
+      console.error("Failed to import products:", error);
+      setImportError(
+        "The products could not be imported. Confirm you are signed in as an admin and that your Firestore rules allow product writes."
+      );
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -389,6 +476,165 @@ function Products() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section className="admin-card bulk-import-card">
+          <div className="admin-card-header">
+            <div>
+              <p className="admin-label">Bulk tools</p>
+              <h2>Import products from a spreadsheet</h2>
+              <p>
+                Upload an Excel or CSV file, review every row, then import the
+                valid products to Firestore in one action.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={downloadProductImportTemplate}
+            >
+              Download template
+            </button>
+          </div>
+
+          <div className="import-format-note">
+            <strong>Required columns:</strong> title, price, category,
+            description, image. The image column must contain an HTTPS URL.
+          </div>
+
+          {importError && (
+            <div className="admin-alert admin-alert-error" role="alert">
+              <strong>Import not ready</strong>
+              <span>{importError}</span>
+            </div>
+          )}
+
+          {importMessage && (
+            <div className="admin-alert admin-alert-success" role="status">
+              <strong>Import complete</strong>
+              <span>{importMessage}</span>
+            </div>
+          )}
+
+          <div className="bulk-upload-row">
+            <input
+              id="product-file-import"
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              onChange={handleImportFileChange}
+              hidden
+            />
+
+            <label htmlFor="product-file-import" className="image-upload-button">
+              Choose Excel or CSV file
+            </label>
+
+            <div className="bulk-file-meta">
+              <strong>{importFileName || "No spreadsheet selected"}</strong>
+              <span>.xlsx, .xls or .csv · maximum 200 products per import</span>
+            </div>
+          </div>
+
+          {importRows.length > 0 && (
+            <>
+              <div className="import-summary">
+                <span className="import-summary-pill">
+                  {importRows.length} rows found
+                </span>
+                <span className="import-summary-pill import-summary-valid">
+                  {validImportRows.length} valid
+                </span>
+                <span
+                  className={`import-summary-pill ${
+                    invalidImportRows.length > 0 ? "import-summary-invalid" : ""
+                  }`}
+                >
+                  {invalidImportRows.length} invalid
+                </span>
+              </div>
+
+              <div className="import-preview-wrapper">
+                <table className="import-preview-table">
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Status</th>
+                      <th>Title</th>
+                      <th>Price</th>
+                      <th>Category</th>
+                      <th>Description</th>
+                      <th>Image</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.map((row) => (
+                      <tr
+                        key={row.rowNumber}
+                        className={row.errors.length > 0 ? "import-row-invalid" : ""}
+                      >
+                        <td>{row.rowNumber}</td>
+                        <td>
+                          {row.errors.length === 0 ? (
+                            <span className="row-status row-status-valid">Valid</span>
+                          ) : (
+                            <div className="row-error-list">
+                              <span className="row-status row-status-invalid">Invalid</span>
+                              {row.errors.map((error) => (
+                                <small key={error}>{error}</small>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td>{row.product.title || "—"}</td>
+                        <td>
+                          {Number.isFinite(row.product.price)
+                            ? `$${row.product.price.toFixed(2)}`
+                            : "—"}
+                        </td>
+                        <td>{row.product.category || "—"}</td>
+                        <td className="import-description-cell">
+                          {row.product.description || "—"}
+                        </td>
+                        <td>
+                          {row.product.image ? (
+                            <a
+                              href={row.product.image}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Preview URL
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bulk-import-actions">
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={
+                    isImporting ||
+                    validImportRows.length === 0 ||
+                    invalidImportRows.length > 0
+                  }
+                  onClick={handleBulkImport}
+                >
+                  {isImporting
+                    ? "Importing…"
+                    : `Import ${validImportRows.length} product${
+                        validImportRows.length === 1 ? "" : "s"
+                      }`}
+                </button>
+              </div>
+            </>
+          )}
         </section>
 
         {editingProduct && (
