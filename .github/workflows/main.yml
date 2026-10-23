@@ -36,13 +36,13 @@ jobs:
     steps:
       #step 1: Checkout code
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       #step 2: Setup Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 24.x
+          node-version: 24
 
       #step 3: Install dependencies
       - name: Install dependencies
