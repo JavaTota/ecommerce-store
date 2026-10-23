@@ -143,6 +143,36 @@ p {
   text-decoration: underline;
 }
 
+.auth-links {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.auth-secondary-link {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-secondary-link:hover {
+  text-decoration: underline;
+}
+
+.auth-footer {
+  color: var(--text-secondary);
+}
+
+.auth-footer a {
+  margin-left: 6px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 600px) {
   .container {
     width: min(100% - 24px, 1180px);
