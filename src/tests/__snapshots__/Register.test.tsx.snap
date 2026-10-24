@@ -38,7 +38,7 @@ exports[`matches snapshot 1`] = `
           class="auth-button"
           type="submit"
         >
-          Register
+          Create account
         </button>
       </form>
       <div

@@ -32,7 +32,7 @@ exports[`matches snapshot 1`] = `
           class="auth-button"
           type="submit"
         >
-          Login
+          Sign in
         </button>
       </form>
       <div
