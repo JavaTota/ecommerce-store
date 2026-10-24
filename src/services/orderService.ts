@@ -88,8 +88,7 @@ export const createOrder = async (
 
       if (cartItem.quantity > currentStock) {
         throw new Error(
-          `${String(data.title ?? cartItem.title)} only has ${currentStock} unit${
-            currentStock === 1 ? "" : "s"
+          `${String(data.title ?? cartItem.title)} only has ${currentStock} unit${currentStock === 1 ? "" : "s"
           } left in stock.`
         );
       }
@@ -119,7 +118,14 @@ export const createOrder = async (
     });
 
     snapshots.forEach((snapshot, index) => {
+      if (!snapshot.exists()) {
+        throw new Error(
+          "A product in your cart is no longer available."
+        );
+      }
+
       const data = snapshot.data();
+
       const currentStock =
         Number.isInteger(data.stock) && data.stock >= 0
           ? Number(data.stock)
