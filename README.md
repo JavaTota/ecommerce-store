@@ -5,7 +5,7 @@ A portfolio e-commerce application built with **React, TypeScript, Redux Toolkit
 The project demonstrates two separate application roles:
 
 - **Customer / general user** — shops products, manages a cart, maintains a profile, and submits demo orders.
-- **Administrator** — receives the normal customer experience plus a protected **Admin Panel** for product management.
+- **Administrator** — uses a separate protected admin experience with **Inventory** and **Product Management**. Admin navigation intentionally does not expose the customer Shop or Cart.
 
 The project started with Fake Store API data and was migrated to Firebase so the catalog, users, and orders are stored in the application's own backend services.
 
@@ -30,21 +30,30 @@ A general user can:
 
 ### Administrator experience
 
-An administrator can do everything a customer can, plus access:
+The administrator uses a separate navigation and does not see the customer Shop or Cart controls. The protected admin area is split into two pages:
 
 ```text
+/admin/inventory
 /admin/products
 ```
 
-The Admin Panel allows the administrator to:
+**Inventory** allows the administrator to:
 
-- create products;
-- edit products;
-- delete products;
-- view the current inventory;
+- view the full catalog;
+- filter products by category;
+- edit individual products;
+- delete individual products;
+- select products;
+- select all products currently visible under a category filter;
+- bulk-delete selected products.
+
+**Product Management** allows the administrator to:
+
+- create products individually;
 - enter a product image using an HTTPS URL;
 - **or upload an image from the computer**;
-- preview the image before saving the product.
+- preview the image before saving;
+- bulk-import products from Excel or CSV files.
 
 The upload flow is:
 
@@ -380,6 +389,7 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 │   │   └── hero.png
 │   ├── components/
 │   │   ├── AdminRoute.tsx         # Protects administrator pages
+│   │   ├── CustomerRoute.tsx      # Keeps admins out of Shop/Cart routes
 │   │   ├── Navbar.tsx             # Role-aware navigation
 │   │   └── ProductCard.tsx        # Customer product card
 │   ├── context/
@@ -395,7 +405,8 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 │   │   ├── Home.tsx
 │   │   ├── Login.tsx
 │   │   ├── Logout.tsx
-│   │   ├── Products.tsx           # Admin product management
+│   │   ├── Inventory.tsx          # Admin filtering/editing/selection/bulk delete
+│   │   ├── Products.tsx           # Admin creation + spreadsheet import
 │   │   ├── Profile.tsx
 │   │   └── Register.tsx
 │   ├── redux/
@@ -429,16 +440,17 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 
 | Route | Access | Purpose |
 |---|---|---|
-| `/` | Public | Customer storefront |
-| `/cart` | Public, login required to checkout | Shopping cart |
+| `/` | Customer / guest | Customer storefront; admins are redirected to Inventory |
+| `/cart` | Customer / guest | Shopping cart; admins are redirected to Inventory |
 | `/login` | Public | Login |
 | `/register` | Public | Create account |
 | `/forgot-password` | Public | Password reset |
 | `/profile` | Authenticated user | User profile |
 | `/logout` | Authenticated user | Logout |
-| `/admin/products` | **Admin only** | Product CRUD + image upload |
+| `/admin/inventory` | **Admin only** | Filter, edit, select and bulk-delete inventory |
+| `/admin/products` | **Admin only** | Create products, image upload, Excel/CSV import |
 
-A legacy `/products` route is also protected by `AdminRoute` and points to the same product-management screen.
+A legacy `/products` route redirects to `/admin/products`. Admins who manually visit `/` or `/cart` are redirected to `/admin/inventory`.
 
 ---
 

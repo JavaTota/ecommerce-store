@@ -473,3 +473,28 @@
   place-items: center;
   color: var(--text-secondary);
 }
+
+/* ADMIN NAVIGATION */
+.admin-nav-link {
+  color: #3730a3;
+  background: #eef2ff;
+}
+
+.admin-nav-link:hover {
+  color: #312e81;
+  background: #e0e7ff;
+}
+
+@media (max-width: 760px) {
+  .navbar-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .navbar-links {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}

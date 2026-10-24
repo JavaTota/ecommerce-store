@@ -1,82 +1,55 @@
-/* ========================================
-   PRODUCT MANAGEMENT PAGE
-======================================== */
-
 .products-page {
   min-height: calc(100vh - 72px);
   padding: 50px 0 80px;
-
   background:
-    linear-gradient(
-      180deg,
-      rgba(15, 23, 42, 0.96) 0 230px,
-      transparent 230px
-    ),
-    radial-gradient(
-      circle at 90% 4%,
-      rgba(37, 99, 235, 0.35),
-      transparent 22%
-    ),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0 230px, transparent 230px),
+    radial-gradient(circle at 90% 4%, rgba(37, 99, 235, 0.35), transparent 22%),
     var(--background);
 }
-
-
-/* ========================================
-   PAGE HEADER
-======================================== */
 
 .products-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-
   gap: 30px;
-
+  min-height: 150px;
   padding-top: 16px;
-  margin-bottom: 32px;
-
   color: white;
 }
 
-.admin-label {
-  margin-bottom: 8px;
-
+.products-header .admin-label {
   color: #93c5fd;
-
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-
-  text-transform: uppercase;
 }
 
 .products-header h1 {
   margin-bottom: 8px;
-
   font-size: 2.3rem;
   letter-spacing: -0.04em;
 }
 
 .products-header > div > p:last-child {
-  margin-bottom: 0;
-
   color: #cbd5e1;
 }
 
+.admin-label {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 
-/* ========================================
-   ADMIN CARDS
-======================================== */
+.admin-header-link {
+  margin-top: 8px;
+  text-decoration: none;
+}
 
 .admin-card {
   margin-bottom: 30px;
   padding: 28px;
-
   background: white;
-
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-
   box-shadow: var(--shadow-md);
 }
 
@@ -84,9 +57,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-
   gap: 20px;
-
   margin-bottom: 24px;
 }
 
@@ -96,26 +67,18 @@
 
 .admin-card-header p {
   margin: 0;
-
   color: var(--text-secondary);
 }
-
-
-/* ========================================
-   PRODUCT FORM
-======================================== */
 
 .product-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-
   gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-
   gap: 7px;
 }
 
@@ -130,19 +93,15 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.image-input-panel input {
   width: 100%;
-
   padding: 12px 13px;
-
   color: var(--text);
   background: white;
-
   border: 1px solid var(--border);
   border-radius: 9px;
-
   outline: none;
-
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -150,62 +109,39 @@
 
 .form-group textarea {
   min-height: 110px;
-
   resize: vertical;
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.image-input-panel input:focus {
   border-color: var(--primary);
-
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-actions {
   grid-column: 1 / -1;
-
   display: flex;
   justify-content: flex-end;
 }
 
-
-/* ========================================
-   GENERAL BUTTONS
-======================================== */
-
 .primary-button:disabled {
   cursor: not-allowed;
-
   opacity: 0.65;
-}
-
-.cancel-button {
-  padding: 9px 13px;
-
-  color: var(--text-secondary);
-  background: var(--surface-soft);
-
-  border: 1px solid var(--border);
-  border-radius: 8px;
-
-  cursor: pointer;
 }
 
 .secondary-button {
   flex: 0 0 auto;
-
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 14px;
-
   color: var(--text);
   background: var(--surface-soft);
-
   border: 1px solid var(--border);
   border-radius: 9px;
-
   font-weight: 700;
-
   cursor: pointer;
-
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
@@ -213,37 +149,22 @@
 
 .secondary-button:hover {
   border-color: #bfdbfe;
-
   background: #eff6ff;
 }
-
-.edit-card {
-  border-left: 4px solid var(--primary);
-}
-
-
-/* ========================================
-   ALERTS
-======================================== */
 
 .admin-alert {
   display: flex;
   flex-direction: column;
-
   gap: 3px;
-
   margin-bottom: 20px;
   padding: 14px 16px;
-
   border-radius: 10px;
-
   font-size: 0.9rem;
 }
 
 .admin-alert-error {
   color: #991b1b;
   background: #fef2f2;
-
   border: 1px solid #fecaca;
   border-left: 4px solid #dc2626;
 }
@@ -251,15 +172,9 @@
 .admin-alert-success {
   color: #166534;
   background: #f0fdf4;
-
   border: 1px solid #bbf7d0;
   border-left: 4px solid #16a34a;
 }
-
-
-/* ========================================
-   PRODUCT IMAGE SOURCE
-======================================== */
 
 .image-source-section {
   padding-top: 4px;
@@ -268,40 +183,25 @@
 .image-source-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-
   gap: 16px;
-
   margin-top: 12px;
 }
-
-
-/* ========================================
-   IMAGE SOURCE BUTTONS
-======================================== */
 
 .image-source-button {
   width: 100%;
   min-height: 135px;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-
   gap: 8px;
-
   padding: 22px 24px;
-
   color: var(--text);
   background: var(--surface);
-
   border: 1.5px solid var(--border);
   border-radius: 16px;
-
   text-align: left;
-
   cursor: pointer;
-
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -311,36 +211,24 @@
 
 .image-source-button:hover {
   border-color: var(--primary);
-
   box-shadow: var(--shadow-sm);
-
   transform: translateY(-1px);
 }
 
 .image-source-button.selected {
-  color: var(--text);
-
   background: #eff6ff;
-
   border-color: var(--primary);
-
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .image-source-button strong {
-  display: block;
-
   color: var(--text);
-
   font-size: 1.15rem;
   font-weight: 700;
 }
 
 .image-source-button span {
-  display: block;
-
   color: var(--text-secondary);
-
   font-size: 0.95rem;
   line-height: 1.45;
 }
@@ -349,69 +237,44 @@
   color: var(--primary);
 }
 
-
-/* ========================================
-   IMAGE URL INPUT
-======================================== */
-
 .image-input-panel {
   display: flex;
   flex-direction: column;
-
   gap: 7px;
-
   margin-top: 18px;
 }
 
 .image-input-panel label {
   color: var(--text-secondary);
-
   font-size: 0.8rem;
   font-weight: 700;
 }
 
-
-/* ========================================
-   IMAGE FILE UPLOAD
-======================================== */
-
 .image-upload-area {
   display: flex;
   align-items: center;
-
   gap: 14px;
-
   min-height: 72px;
-
   margin-top: 18px;
   padding: 16px;
-
   background: var(--surface-soft);
-
   border: 1px dashed #cbd5e1;
   border-radius: 11px;
 }
 
 .image-upload-button {
   flex: 0 0 auto;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   padding: 10px 16px;
-
   color: white;
   background: var(--primary);
-
   border: 0;
   border-radius: 9px;
-
   font-size: 0.88rem;
   font-weight: 700;
-
   cursor: pointer;
-
   transition:
     background 0.2s ease,
     transform 0.15s ease;
@@ -419,43 +282,26 @@
 
 .image-upload-button:hover {
   background: var(--primary-hover);
-
   transform: translateY(-1px);
 }
 
 .selected-file-name {
   overflow: hidden;
-
   color: var(--text-secondary);
-
   font-size: 0.88rem;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-
-/* ========================================
-   IMAGE PREVIEW
-======================================== */
-
 .product-image-preview {
   display: grid;
-  grid-template-columns:
-    minmax(170px, 0.65fr)
-    minmax(220px, 1.35fr);
-
+  grid-template-columns: minmax(170px, 0.65fr) minmax(220px, 1.35fr);
   gap: 18px;
-
   align-items: center;
-
   min-height: 230px;
-
   margin-top: 20px;
   padding: 18px;
-
   background: #f8fafc;
-
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -463,7 +309,6 @@
 .preview-heading {
   display: flex;
   flex-direction: column;
-
   gap: 5px;
 }
 
@@ -473,7 +318,6 @@
 
 .preview-heading span {
   color: var(--text-secondary);
-
   font-size: 0.86rem;
   line-height: 1.45;
 }
@@ -482,215 +326,24 @@
 .preview-placeholder {
   width: 100%;
   height: 200px;
-
   background: white;
-
   border: 1px solid var(--border);
   border-radius: 10px;
 }
 
 .product-image-preview img {
   padding: 12px;
-
   object-fit: contain;
 }
 
 .preview-placeholder {
   display: grid;
-
   place-items: center;
-
   padding: 24px;
-
   color: var(--text-secondary);
-
   text-align: center;
   line-height: 1.5;
 }
-
-
-/* ========================================
-   EDIT PRODUCT IMAGE
-======================================== */
-
-.edit-image-preview img {
-  width: min(260px, 100%);
-  height: 180px;
-
-  padding: 10px;
-
-  background: #f8fafc;
-
-  border: 1px solid var(--border);
-  border-radius: 10px;
-
-  object-fit: contain;
-}
-
-
-/* ========================================
-   INVENTORY SECTION
-======================================== */
-
-.inventory-section {
-  margin-top: 46px;
-}
-
-.inventory-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-
-  margin-bottom: 20px;
-}
-
-.inventory-heading h2 {
-  margin-bottom: 4px;
-}
-
-.inventory-heading p {
-  margin: 0;
-
-  color: var(--text-secondary);
-}
-
-
-/* ========================================
-   EMPTY INVENTORY
-======================================== */
-
-.products-empty {
-  padding: 70px 30px;
-
-  background: white;
-
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-
-  text-align: center;
-}
-
-.products-empty h3 {
-  margin-bottom: 8px;
-}
-
-.products-empty p {
-  margin-bottom: 22px;
-
-  color: var(--text-secondary);
-}
-
-
-/* ========================================
-   PRODUCT GRID
-======================================== */
-
-.admin-products-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-
-  gap: 18px;
-}
-
-.admin-product-card {
-  overflow: hidden;
-
-  background: white;
-
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-
-  box-shadow: var(--shadow-sm);
-}
-
-.admin-product-image-wrapper {
-  height: 190px;
-
-  padding: 22px;
-
-  background: #fafbfc;
-}
-
-.admin-product-image {
-  width: 100%;
-  height: 100%;
-
-  object-fit: contain;
-}
-
-.admin-product-content {
-  padding: 17px;
-}
-
-.admin-product-category {
-  display: block;
-
-  margin-bottom: 6px;
-
-  color: var(--primary);
-
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-
-  text-transform: uppercase;
-}
-
-.admin-product-content h3 {
-  min-height: 44px;
-
-  margin-bottom: 10px;
-
-  font-size: 0.95rem;
-  line-height: 1.35;
-}
-
-.admin-product-price {
-  margin-bottom: 15px;
-
-  font-size: 1.05rem;
-  font-weight: 800;
-}
-
-.admin-product-actions {
-  display: flex;
-
-  gap: 12px;
-}
-
-.edit-button,
-.delete-button {
-  flex: 1;
-
-  padding: 9px 12px;
-
-  border-radius: 8px;
-
-  font-weight: 700;
-
-  cursor: pointer;
-}
-
-.edit-button {
-  color: var(--text);
-
-  background: var(--surface-soft);
-
-  border: 1px solid var(--border);
-}
-
-.delete-button {
-  color: #b91c1c;
-
-  background: #fef2f2;
-
-  border: 1px solid #fecaca;
-}
-
-
-/* ========================================
-   BULK PRODUCT IMPORT
-======================================== */
 
 .bulk-import-card {
   border-top: 4px solid #0f766e;
@@ -699,108 +352,72 @@
 .import-format-note {
   margin-bottom: 18px;
   padding: 13px 15px;
-
   color: #475569;
   background: #f8fafc;
-
   border: 1px solid var(--border);
   border-radius: 10px;
-
   font-size: 0.88rem;
   line-height: 1.55;
 }
 
-
-/* ========================================
-   BULK FILE UPLOAD
-======================================== */
-
 .bulk-upload-row {
   display: flex;
   align-items: center;
-
   gap: 16px;
-
   padding: 18px;
-
   background: #f8fafc;
-
   border: 1px dashed #94a3b8;
   border-radius: 12px;
 }
 
 .bulk-file-meta {
   min-width: 0;
-
   display: flex;
   flex-direction: column;
-
   gap: 3px;
 }
 
 .bulk-file-meta strong {
   overflow: hidden;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .bulk-file-meta span {
   color: var(--text-secondary);
-
   font-size: 0.82rem;
 }
-
-
-/* ========================================
-   IMPORT SUMMARY
-======================================== */
 
 .import-summary {
   display: flex;
   flex-wrap: wrap;
-
   gap: 8px;
-
   margin: 20px 0 12px;
 }
 
 .import-summary-pill {
   padding: 7px 10px;
-
   color: #334155;
   background: #f1f5f9;
-
   border-radius: 999px;
-
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .import-summary-valid {
   color: #166534;
-
   background: #dcfce7;
 }
 
 .import-summary-invalid {
   color: #991b1b;
-
   background: #fee2e2;
 }
 
-
-/* ========================================
-   IMPORT PREVIEW TABLE
-======================================== */
-
 .import-preview-wrapper {
   overflow-x: auto;
-
   max-height: 440px;
-
   background: white;
-
   border: 1px solid var(--border);
   border-radius: 11px;
 }
@@ -808,18 +425,14 @@
 .import-preview-table {
   width: 100%;
   min-width: 980px;
-
   border-collapse: collapse;
-
   font-size: 0.82rem;
 }
 
 .import-preview-table th,
 .import-preview-table td {
   padding: 11px 12px;
-
   border-bottom: 1px solid var(--border);
-
   text-align: left;
   vertical-align: top;
 }
@@ -828,13 +441,10 @@
   position: sticky;
   top: 0;
   z-index: 1;
-
   color: #475569;
   background: #f8fafc;
-
   font-size: 0.74rem;
   letter-spacing: 0.04em;
-
   text-transform: uppercase;
 }
 
@@ -844,7 +454,6 @@
 
 .import-preview-table a {
   color: var(--primary);
-
   font-weight: 700;
 }
 
@@ -852,92 +461,59 @@
   background: #fff7f7;
 }
 
-
-/* ========================================
-   IMPORT ROW STATUS
-======================================== */
-
 .row-status {
   display: inline-flex;
-
   padding: 4px 7px;
-
   border-radius: 999px;
-
   font-size: 0.7rem;
   font-weight: 800;
 }
 
 .row-status-valid {
   color: #166534;
-
   background: #dcfce7;
 }
 
 .row-status-invalid {
   color: #991b1b;
-
   background: #fee2e2;
 }
 
 .row-error-list {
   display: flex;
+  min-width: 210px;
   flex-direction: column;
   align-items: flex-start;
-
-  min-width: 210px;
-
   gap: 6px;
 }
 
 .row-error-list small {
   color: #991b1b;
-
   line-height: 1.35;
 }
 
 .import-description-cell {
   max-width: 300px;
-
   color: var(--text-secondary);
-
   line-height: 1.45;
 }
-
-
-/* ========================================
-   IMPORT ACTIONS
-======================================== */
 
 .bulk-import-actions {
   display: flex;
   justify-content: flex-end;
-
   margin-top: 18px;
 }
 
-
-/* ========================================
-   RESPONSIVE - TABLET
-======================================== */
-
-@media (max-width: 1000px) {
-  .admin-products-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-
-/* ========================================
-   RESPONSIVE - SMALL TABLET
-======================================== */
-
 @media (max-width: 750px) {
-  .products-header {
+  .products-header,
+  .admin-card-header,
+  .bulk-upload-row {
     flex-direction: column;
   }
 
-  .product-form {
+  .product-form,
+  .image-source-options,
+  .product-image-preview {
     grid-template-columns: 1fr;
   }
 
@@ -946,59 +522,22 @@
     grid-column: auto;
   }
 
-  .admin-products-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .image-source-options {
-    grid-template-columns: 1fr;
-  }
-
   .image-source-button {
     min-height: 110px;
   }
 
-  .product-image-preview {
-    grid-template-columns: 1fr;
-  }
-
   .image-upload-area {
-    flex-direction: column;
     align-items: flex-start;
-  }
-
-  .bulk-import-card .admin-card-header,
-  .bulk-upload-row {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  .bulk-import-card .secondary-button,
-  .bulk-upload-row .image-upload-button {
-    text-align: center;
   }
 }
 
-
-/* ========================================
-   RESPONSIVE - MOBILE
-======================================== */
-
 @media (max-width: 500px) {
-  .admin-products-grid {
-    grid-template-columns: 1fr;
-  }
-
   .admin-card {
     padding: 20px;
   }
 
   .image-source-button {
     padding: 18px;
-  }
-
-  .product-image-preview img,
-  .preview-placeholder {
-    height: 220px;
   }
 }
