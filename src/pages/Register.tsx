@@ -87,7 +87,7 @@ function Register() {
         createdAt: serverTimestamp(),
       });
 
-      navigate("/profile");
+      navigate("/");
     } catch (error) {
       console.error(error);
 
