@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteProduct,
   deleteProducts,
@@ -7,6 +7,17 @@ import {
 } from "../services/productService";
 import type { Product } from "../types/product";
 import "../styles/inventory.css";
+
+type DeleteRequest =
+  | {
+      type: "single";
+      id: string;
+      title: string;
+    }
+  | {
+      type: "bulk";
+      ids: string[];
+    };
 
 function Inventory() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -17,6 +28,9 @@ function Inventory() {
   const [error, setError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteRequest, setDeleteRequest] = useState<DeleteRequest | null>(null);
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState("");
+  const deleteToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadProducts = async () => {
     const data = await getProductsFromFirestore();
@@ -32,6 +46,14 @@ function Inventory() {
 
     return () => {
       isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (deleteToastTimer.current) {
+        clearTimeout(deleteToastTimer.current);
+      }
     };
   }, []);
 
@@ -54,6 +76,18 @@ function Inventory() {
   const allFilteredSelected =
     filteredProducts.length > 0 &&
     filteredProducts.every((product) => selectedIds.has(product.id));
+
+  const showDeleteSuccess = (text: string) => {
+    setDeleteSuccessMessage(text);
+
+    if (deleteToastTimer.current) {
+      clearTimeout(deleteToastTimer.current);
+    }
+
+    deleteToastTimer.current = setTimeout(() => {
+      setDeleteSuccessMessage("");
+    }, 3200);
+  };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -90,56 +124,66 @@ function Inventory() {
     });
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-
-    if (!confirmed) return;
-
+  const requestSingleDelete = (product: Product) => {
     setError("");
     setMessage("");
-
-    try {
-      await deleteProduct(id);
-      setSelectedIds((current) => {
-        const next = new Set(current);
-        next.delete(id);
-        return next;
-      });
-      setMessage("Product deleted successfully.");
-      await loadProducts();
-    } catch (deleteError) {
-      console.error("Failed to delete product:", deleteError);
-      setError("The product could not be deleted. Please try again.");
-    }
+    setDeleteRequest({
+      type: "single",
+      id: product.id,
+      title: product.title,
+    });
   };
 
-  const handleBulkDelete = async () => {
+  const requestBulkDelete = () => {
     const ids = [...selectedIds];
 
     if (ids.length === 0) return;
 
-    const confirmed = window.confirm(
-      `Delete ${ids.length} selected product${ids.length === 1 ? "" : "s"}? This cannot be undone.`
-    );
+    setError("");
+    setMessage("");
+    setDeleteRequest({
+      type: "bulk",
+      ids,
+    });
+  };
 
-    if (!confirmed) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteRequest) return;
 
     setIsDeleting(true);
     setError("");
     setMessage("");
 
     try {
-      await deleteProducts(ids);
-      setSelectedIds(new Set());
-      setMessage(
-        `${ids.length} product${ids.length === 1 ? "" : "s"} deleted successfully.`
-      );
+      if (deleteRequest.type === "single") {
+        await deleteProduct(deleteRequest.id);
+
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          next.delete(deleteRequest.id);
+          return next;
+        });
+
+        showDeleteSuccess("Product deleted successfully.");
+      } else {
+        await deleteProducts(deleteRequest.ids);
+        setSelectedIds(new Set());
+        showDeleteSuccess(
+          `${deleteRequest.ids.length} product${
+            deleteRequest.ids.length === 1 ? "" : "s"
+          } deleted successfully.`
+        );
+      }
+
+      setDeleteRequest(null);
       await loadProducts();
     } catch (deleteError) {
-      console.error("Failed to delete selected products:", deleteError);
-      setError("The selected products could not be deleted. Please try again.");
+      console.error("Failed to delete product(s):", deleteError);
+      setError(
+        deleteRequest.type === "single"
+          ? "The product could not be deleted. Please try again."
+          : "The selected products could not be deleted. Please try again."
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -253,11 +297,9 @@ function Inventory() {
               type="button"
               className="inventory-delete-selected"
               disabled={selectedIds.size === 0 || isDeleting}
-              onClick={handleBulkDelete}
+              onClick={requestBulkDelete}
             >
-              {isDeleting
-                ? "Deleting…"
-                : `Delete selected${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
+              {`Delete selected${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
             </button>
           </div>
         </section>
@@ -378,8 +420,8 @@ function Inventory() {
             <h2>No products found</h2>
             <p>
               {selectedCategory
-                ? "There are no products in this category."
-                : "Add products from Product Management to populate your inventory."}
+                ? `There are no products in ${selectedCategory}.`
+                : "There are no products in your catalog yet."}
             </p>
           </section>
         ) : (
@@ -389,8 +431,10 @@ function Inventory() {
 
               return (
                 <article
-                  className={`inventory-product-card ${isSelected ? "selected" : ""}`}
                   key={product.id}
+                  className={`inventory-product-card${
+                    isSelected ? " selected" : ""
+                  }`}
                 >
                   <div className="inventory-card-select">
                     <label>
@@ -399,15 +443,15 @@ function Inventory() {
                         checked={isSelected}
                         onChange={() => toggleProductSelection(product.id)}
                       />
-                      <span>Select</span>
+                      Select
                     </label>
                   </div>
 
                   <div className="inventory-product-image-wrapper">
                     <img
+                      className="inventory-product-image"
                       src={product.image}
                       alt={product.title}
-                      className="inventory-product-image"
                     />
                   </div>
 
@@ -431,15 +475,15 @@ function Inventory() {
                           setEditingProduct(product);
                           setMessage("");
                           setError("");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
                       >
                         Edit
                       </button>
+
                       <button
                         type="button"
                         className="inventory-delete-button"
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => requestSingleDelete(product)}
                       >
                         Delete
                       </button>
@@ -451,6 +495,76 @@ function Inventory() {
           </section>
         )}
       </div>
+
+      {deleteRequest && (
+        <div
+          className="inventory-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isDeleting) {
+              setDeleteRequest(null);
+            }
+          }}
+        >
+          <div
+            className="inventory-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirmation-title"
+          >
+            <p className="inventory-eyebrow">Confirm deletion</p>
+            <h2 id="delete-confirmation-title">
+              {deleteRequest.type === "single"
+                ? "Are you sure you want to delete this product?"
+                : `Are you sure you want to delete ${deleteRequest.ids.length} selected product${
+                    deleteRequest.ids.length === 1 ? "" : "s"
+                  }?`}
+            </h2>
+
+            <p>
+              {deleteRequest.type === "single"
+                ? `“${deleteRequest.title}” will be permanently removed from the inventory.`
+                : "The selected products will be permanently removed from the inventory."}
+            </p>
+
+            <div className="inventory-delete-modal-actions">
+              <button
+                type="button"
+                className="inventory-secondary-button"
+                disabled={isDeleting}
+                onClick={() => setDeleteRequest(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="inventory-confirm-delete"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+              >
+                {isDeleting
+                  ? "Deleting…"
+                  : deleteRequest.type === "single"
+                    ? "Delete product"
+                    : "Delete selected"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteSuccessMessage && (
+        <div className="inventory-delete-toast" role="status" aria-live="polite">
+          <span className="inventory-delete-toast-icon" aria-hidden="true">
+            ✓
+          </span>
+          <div>
+            <strong>Deleted successfully</strong>
+            <span>{deleteSuccessMessage}</span>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

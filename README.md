@@ -561,3 +561,11 @@ Common header variants such as `name`, `product_name`, `desc`, and `image_url` a
 The **Download template** button creates a starter CSV with the correct headers and an example product. Bulk-import images use URLs; individual products can still use the separate Firebase Storage image-upload workflow.
 
 Spreadsheet parsing uses SheetJS CE 0.20.3 from the official SheetJS CDN package.
+
+## Recent UX improvements
+
+- Product cards support selecting a quantity from **1 to 99** before adding to the cart.
+- Adding a product displays a temporary confirmation toast at the bottom of the storefront.
+- Cart quantity controls also respect the 99-unit per-line limit enforced by the order rules.
+- Profile includes a secure password-change form that re-authenticates the user with their current password before updating it.
+- Inventory deletion uses an in-app confirmation dialog for both single and bulk deletion, followed by a visible success toast after Firestore confirms the deletion.
