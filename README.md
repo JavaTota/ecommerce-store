@@ -113,6 +113,21 @@ This means hiding the Admin Panel in the navbar is only a UI convenience; backen
 
 # How to Access the Admin Panel
 
+## Demo administrator credentials
+
+For portfolio/demo access to the administrator area, use:
+
+```text
+Email: aaa@gmail.com
+Password: pass123
+```
+
+After signing in, the administrator can access the Dashboard, Inventory, Product Management, and Order Management areas.
+
+> **Demo account only:** these credentials are intentionally published for portfolio review and should not be reused for any real or sensitive account.
+
+### How administrator access is configured
+
 ## 1. Create the admin user normally
 
 Register the account through the application first so it exists in Firebase Authentication.
