@@ -575,3 +575,38 @@
     width: auto;
   }
 }
+
+/* STOCK MANAGEMENT */
+.inventory-product-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.inventory-product-meta-row .inventory-product-price {
+  margin: 0;
+}
+
+.inventory-stock {
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.inventory-stock.in {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.inventory-stock.low {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.inventory-stock.out {
+  color: #991b1b;
+  background: #fee2e2;
+}

@@ -4,8 +4,8 @@ A portfolio e-commerce application built with **React, TypeScript, Redux Toolkit
 
 The project demonstrates two separate application roles:
 
-- **Customer / general user** — shops products, manages a cart, maintains a profile, and submits demo orders.
-- **Administrator** — uses a separate protected admin experience with **Inventory** and **Product Management**. Admin navigation intentionally does not expose the customer Shop or Cart.
+- **Customer / general user** — searches and filters the live catalog, opens product detail pages, manages a stock-aware cart, maintains a profile, submits orders, and reviews order history.
+- **Administrator** — uses a separate protected admin experience with **Dashboard**, **Inventory**, **Product Management**, and **Order Management**. Admin navigation intentionally does not expose the customer Shop or Cart.
 
 The project started with Fake Store API data and was migrated to Firebase so the catalog, users, and orders are stored in the application's own backend services.
 
@@ -18,30 +18,38 @@ The project started with Fake Store API data and was migrated to Firebase so the
 A general user can:
 
 - browse the storefront without administrator controls;
-- filter products by category;
+- search products and persist search/filter/sort/page state in the URL;
+- filter by category, sort by price/name, and paginate the catalog;
+- open dynamic product detail routes (`/products/:productId`);
+- see live stock availability before adding a product;
 - add products to the Redux-powered cart;
-- increase/decrease quantities and remove items;
+- increase/decrease quantities while respecting available stock;
 - register with email/password;
 - log in and log out;
 - reset a forgotten password;
 - view and update their profile and shipping address;
 - delete their own account;
-- submit a demo order when authenticated.
+- submit an authenticated Firestore transaction that rechecks catalog price and stock before committing;
+- view order history and order status after checkout.
 
 ### Administrator experience
 
-The administrator uses a separate navigation and does not see the customer Shop or Cart controls. The protected admin area is split into two pages:
+The administrator uses a separate navigation and does not see the customer Shop or Cart controls. The protected admin area is split across:
 
 ```text
+/admin/dashboard
 /admin/inventory
 /admin/products
+/admin/orders
 ```
+
+**Dashboard** summarizes revenue, order counts, catalog size, total stock, low-stock products, and the fulfilment pipeline.
 
 **Inventory** allows the administrator to:
 
 - view the full catalog;
 - filter products by category;
-- edit individual products;
+- edit individual products, including stock quantities;
 - delete individual products;
 - select products;
 - select all products currently visible under a category filter;
@@ -49,11 +57,19 @@ The administrator uses a separate navigation and does not see the customer Shop 
 
 **Product Management** allows the administrator to:
 
-- create products individually;
+- create products individually with an initial stock quantity;
 - enter a product image using an HTTPS URL;
 - **or upload an image from the computer**;
 - preview the image before saving;
-- bulk-import products from Excel or CSV files.
+- bulk-import products from Excel or CSV files, with optional `stock` values that default to 25.
+
+**Order Management** allows the administrator to:
+
+- search orders by ID/customer email;
+- filter by fulfilment status;
+- move orders through `submitted → processing → shipped → delivered`;
+- cancel orders and automatically restore their stock;
+- reactivate cancelled orders only when sufficient stock is available.
 
 The upload flow is:
 
@@ -300,7 +316,8 @@ products/{productId}
 ├── price
 ├── category
 ├── description
-└── image          HTTPS URL
+├── image          HTTPS URL
+└── stock          integer >= 0
 ```
 
 Example:
@@ -311,7 +328,8 @@ Example:
   "price": 49.99,
   "category": "accessories",
   "description": "A lightweight everyday backpack.",
-  "image": "https://..."
+  "image": "https://...",
+  "stock": 25
 }
 ```
 
@@ -320,14 +338,15 @@ Example:
 ```text
 orders/{orderId}
 ├── userId
+├── customerEmail
 ├── products[]
 ├── totalItems
 ├── totalPrice
-├── status: "submitted"
+├── status
 └── createdAt
 ```
 
-Order creation uses `serverTimestamp()` and rounds totals to cents before writing the order.
+Order creation uses `serverTimestamp()` and a Firestore transaction. Checkout re-reads each product from Firestore, verifies the current price and stock, decrements stock, calculates totals from the persisted catalog values, and creates the order atomically. Firestore transactions retry when a read document changes concurrently, so checkout does not rely only on stale React state.
 
 ---
 
@@ -340,11 +359,15 @@ Cloud Firestore
      ↓
 productService.ts
      ↓
-Home.tsx
+Home.tsx ── search / category / sort / pagination
      ↓
-ProductCard.tsx
+ProductCard.tsx ──→ ProductDetail.tsx
      ↓
 Redux cart
+     ↓
+transactional checkout
+     ↓
+orders + stock update
 ```
 
 ## Product administration
@@ -381,6 +404,9 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       └── main.yml               # CI + Vercel deployment
 ├── public/
 ├── scripts/
 │   └── set-admin.mjs              # Grants Firebase admin custom claim
@@ -389,9 +415,9 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 │   │   └── hero.png
 │   ├── components/
 │   │   ├── AdminRoute.tsx         # Protects administrator pages
-│   │   ├── CustomerRoute.tsx      # Keeps admins out of Shop/Cart routes
+│   │   ├── CustomerRoute.tsx      # Keeps admins out of customer routes
 │   │   ├── Navbar.tsx             # Role-aware navigation
-│   │   └── ProductCard.tsx        # Customer product card
+│   │   └── ProductCard.tsx        # Stock-aware customer product card
 │   ├── context/
 │   │   ├── AuthContext.tsx        # Auth provider + admin-claim state
 │   │   ├── auth-context.ts        # Context type/default value
@@ -400,12 +426,16 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 │   │   └── firebase/
 │   │       └── firebase.ts        # Auth, Firestore and Storage initialization
 │   ├── pages/
+│   │   ├── AdminDashboard.tsx     # Operational admin metrics
+│   │   ├── AdminOrders.tsx        # Admin fulfilment workflow
 │   │   ├── Cart.tsx
 │   │   ├── ForgotPassword.tsx
-│   │   ├── Home.tsx
+│   │   ├── Home.tsx               # Search/filter/sort/pagination
+│   │   ├── Inventory.tsx          # Admin stock/edit/selection/bulk delete
 │   │   ├── Login.tsx
 │   │   ├── Logout.tsx
-│   │   ├── Inventory.tsx          # Admin filtering/editing/selection/bulk delete
+│   │   ├── Orders.tsx             # Customer order history
+│   │   ├── ProductDetail.tsx      # Dynamic product route
 │   │   ├── Products.tsx           # Admin creation + spreadsheet import
 │   │   ├── Profile.tsx
 │   │   └── Register.tsx
@@ -414,14 +444,20 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 │   │   └── store.ts
 │   ├── services/
 │   │   ├── imageService.ts        # Storage validation/upload
-│   │   ├── orderService.ts
+│   │   ├── orderService.ts        # Transactional checkout + order status
+│   │   ├── productImportService.ts
 │   │   ├── productService.ts
 │   │   └── userService.ts
 │   ├── styles/
 │   │   ├── auth-styles.css
+│   │   ├── dashboard.css
+│   │   ├── inventory.css
+│   │   ├── orders.css
 │   │   ├── products.css
 │   │   └── store.css
 │   ├── tests/
+│   │   ├── cartSlice.test.ts
+│   │   └── ...
 │   ├── types/
 │   │   └── product.ts
 │   ├── App.tsx                    # Routes
@@ -430,6 +466,7 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 ├── firebase.json
 ├── firestore.rules
 ├── storage.rules
+├── vercel.json                    # SPA deep-link rewrite
 ├── package.json
 └── README.md
 ```
@@ -440,17 +477,21 @@ This keeps transient shopping-cart state separate from persistent Firestore data
 
 | Route | Access | Purpose |
 |---|---|---|
-| `/` | Customer / guest | Customer storefront; admins are redirected to Inventory |
-| `/cart` | Customer / guest | Shopping cart; admins are redirected to Inventory |
+| `/` | Customer / guest | Searchable, sortable, paginated storefront |
+| `/products/:productId` | Customer / guest | Product detail page |
+| `/cart` | Customer / guest | Stock-aware shopping cart and checkout |
+| `/orders` | Authenticated customer | Customer order history |
 | `/login` | Public | Login |
 | `/register` | Public | Create account |
 | `/forgot-password` | Public | Password reset |
-| `/profile` | Authenticated user | User profile |
+| `/profile` | Authenticated user | Profile + password change |
 | `/logout` | Authenticated user | Logout |
-| `/admin/inventory` | **Admin only** | Filter, edit, select and bulk-delete inventory |
+| `/admin/dashboard` | **Admin only** | Revenue/order/stock overview |
+| `/admin/inventory` | **Admin only** | Filter, edit stock, select and bulk-delete inventory |
 | `/admin/products` | **Admin only** | Create products, image upload, Excel/CSV import |
+| `/admin/orders` | **Admin only** | Search/filter orders and update fulfilment status |
 
-A legacy `/products` route redirects to `/admin/products`. Admins who manually visit `/` or `/cart` are redirected to `/admin/inventory`.
+Admins who manually visit customer Shop/Cart routes are redirected to `/admin/dashboard`.
 
 ---
 
@@ -485,6 +526,8 @@ Production build:
 ```bash
 npm run build
 ```
+
+The GitHub Actions workflow runs tests, linting and the production build on Node 24 before deployment. Vercel uses `vercel.json` to rewrite SPA deep links to `index.html`, so refreshing routes such as `/products/:id` and `/admin/orders` continues to work.
 
 Tests:
 
@@ -524,17 +567,17 @@ Important security decisions include:
 
 # Possible Future Improvements
 
-- order-history UI;
-- product search and sorting;
-- product detail pages;
-- pagination;
-- inventory/stock quantities;
-- upload progress indicators;
-- deleting unused Storage images when products are deleted;
-- payment-provider integration;
-- email verification;
-- stronger admin auditing/logging;
-- automated Firestore/Storage rule tests.
+The next production-hardening step is to move authoritative checkout/inventory mutation from the browser into a trusted backend such as **Firebase Cloud Functions**. The current client transaction is concurrency-safe and validates stock/price atomically, but client-side security rules still cannot provide the same trust boundary as server code.
+
+Other useful extensions:
+
+- Stripe test-mode checkout + webhook-driven payment status;
+- Playwright end-to-end tests for customer/admin flows;
+- Firebase Emulator Suite tests for Firestore and Storage rules;
+- email verification and transactional order emails;
+- audit logs for administrator actions;
+- automatic cleanup of unused Storage images;
+- richer sales charts and date-range analytics.
 
 ## Bulk product import
 
@@ -555,6 +598,7 @@ The importer reads the first worksheet and expects these product fields:
 | `category` | Yes | 1–80 characters |
 | `description` | Yes | 1–2,000 characters |
 | `image` | Yes | HTTPS image URL |
+| `stock` | No | Whole number; defaults to 25 |
 
 Common header variants such as `name`, `product_name`, `desc`, and `image_url` are accepted. The admin UI parses the spreadsheet locally, displays a row-by-row preview, marks invalid rows, and only enables the import button when every row passes validation. A maximum of 200 products can be imported in one file.
 
@@ -564,7 +608,12 @@ Spreadsheet parsing uses SheetJS CE 0.20.3 from the official SheetJS CDN package
 
 ## Recent UX improvements
 
-- Product cards support selecting a quantity from **1 to 99** before adding to the cart.
+- Product cards support selecting a quantity from **1 to 99**, capped by current stock, before adding to the cart.
+- Product cards link to dedicated dynamic product-detail pages.
+- Storefront search, category filter, sorting and pagination are persisted in query parameters.
+- Checkout uses a Firestore transaction to validate current price/stock and atomically decrement inventory.
+- Customers can review order history and current fulfilment status.
+- Admins have a dashboard plus order-management workflow; cancelling an order restores stock.
 - Adding a product displays a temporary confirmation toast at the bottom of the storefront.
 - Cart quantity controls also respect the 99-unit per-line limit enforced by the order rules.
 - Profile includes a secure password-change form that re-authenticates the user with their current password before updating it.

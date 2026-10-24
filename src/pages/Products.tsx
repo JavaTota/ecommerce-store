@@ -23,6 +23,7 @@ const emptyProduct = {
   description: "",
   category: "",
   image: "",
+  stock: 25,
 };
 
 function Products() {
@@ -111,9 +112,16 @@ function Products() {
     const category = newProduct.category.trim();
     const description = newProduct.description.trim();
 
-    if (!title || !category || !description || newProduct.price <= 0) {
+    if (
+      !title ||
+      !category ||
+      !description ||
+      newProduct.price <= 0 ||
+      !Number.isInteger(newProduct.stock) ||
+      newProduct.stock < 0
+    ) {
       setFormError(
-        "Please complete every product field and enter a price above $0."
+        "Please complete every product field, enter a price above $0 and a valid whole-number stock quantity."
       );
       return;
     }
@@ -150,6 +158,7 @@ function Products() {
         description,
         category,
         image: finalImageUrl,
+        stock: newProduct.stock,
       });
 
       if (localPreview) URL.revokeObjectURL(localPreview);
@@ -295,6 +304,23 @@ function Products() {
                   setNewProduct({
                     ...newProduct,
                     price: Number(event.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="product-stock">Stock</label>
+              <input
+                id="product-stock"
+                type="number"
+                min="0"
+                step="1"
+                value={newProduct.stock}
+                onChange={(event) =>
+                  setNewProduct({
+                    ...newProduct,
+                    stock: Math.max(0, Math.floor(Number(event.target.value) || 0)),
                   })
                 }
               />
@@ -451,7 +477,8 @@ function Products() {
 
           <div className="import-format-note">
             <strong>Required columns:</strong> title, price, category,
-            description, image. The image column must contain an HTTPS URL.
+            description, image. Optional stock defaults to 25. The image column
+            must contain an HTTPS URL.
           </div>
 
           {importError && (
@@ -516,6 +543,7 @@ function Products() {
                       <th>Category</th>
                       <th>Description</th>
                       <th>Image</th>
+                      <th>Stock</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -562,6 +590,7 @@ function Products() {
                             "—"
                           )}
                         </td>
+                        <td>{row.product.stock}</td>
                       </tr>
                     ))}
                   </tbody>

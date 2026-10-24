@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../redux/store";
 import { addToCart } from "../redux/cartSlice";
@@ -12,54 +13,47 @@ const MAX_QUANTITY = 99;
 
 function ProductCard({ product }: ProductCardProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const [quantity, setQuantity] = useState(1);
+  const maxQuantity = Math.min(MAX_QUANTITY, product.stock);
+  const [quantity, setQuantity] = useState(maxQuantity > 0 ? 1 : 0);
   const [cartMessage, setCartMessage] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
-      if (toastTimer.current) {
-        clearTimeout(toastTimer.current);
-      }
+      if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
-  const updateQuantity = (nextQuantity: number) => {
-    const safeQuantity = Math.min(
-      MAX_QUANTITY,
-      Math.max(1, Math.floor(nextQuantity || 1))
-    );
+  const displayedQuantity =
+    maxQuantity > 0 ? Math.min(maxQuantity, Math.max(1, quantity)) : 0;
 
-    setQuantity(safeQuantity);
+  const updateQuantity = (nextQuantity: number) => {
+    if (maxQuantity <= 0) return;
+
+    setQuantity(
+      Math.min(maxQuantity, Math.max(1, Math.floor(nextQuantity || 1)))
+    );
   };
 
   const handleAddToCart = () => {
-    dispatch(
-      addToCart({
-        product,
-        quantity,
-      })
-    );
+    if (product.stock <= 0) return;
 
-    setCartMessage(
-      `${quantity} × ${product.title} added to your cart.`
-    );
-
+    dispatch(addToCart({ product, quantity: displayedQuantity }));
+    setCartMessage(`${displayedQuantity} × ${product.title} added to your cart.`);
     setQuantity(1);
 
-    if (toastTimer.current) {
-      clearTimeout(toastTimer.current);
-    }
-
-    toastTimer.current = setTimeout(() => {
-      setCartMessage("");
-    }, 3200);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setCartMessage(""), 3200);
   };
 
   return (
     <>
       <article className="product-card">
-        <div className="product-image-container">
+        <Link
+          className="product-image-container"
+          to={`/products/${product.id}`}
+          aria-label={`View ${product.title}`}
+        >
           <img
             className="product-image"
             src={product.image}
@@ -68,18 +62,35 @@ function ProductCard({ product }: ProductCardProps) {
               event.currentTarget.style.visibility = "hidden";
             }}
           />
-        </div>
+        </Link>
 
         <div className="product-content">
           <span className="product-category">{product.category}</span>
 
-          <h3 className="product-title">{product.title}</h3>
+          <h3 className="product-title">
+            <Link to={`/products/${product.id}`}>{product.title}</Link>
+          </h3>
 
           <p className="product-description">{product.description}</p>
 
-          <p className="product-price">
-            ${Number(product.price).toFixed(2)}
-          </p>
+          <div className="product-stock-row">
+            <p className="product-price">${Number(product.price).toFixed(2)}</p>
+            <span
+              className={`stock-badge ${
+                product.stock === 0
+                  ? "out"
+                  : product.stock <= 5
+                    ? "low"
+                    : "in"
+              }`}
+            >
+              {product.stock === 0
+                ? "Out of stock"
+                : product.stock <= 5
+                  ? `Only ${product.stock} left`
+                  : "In stock"}
+            </span>
+          </div>
 
           <div className="product-purchase-row">
             <div
@@ -89,8 +100,8 @@ function ProductCard({ product }: ProductCardProps) {
               <button
                 type="button"
                 aria-label="Decrease quantity"
-                onClick={() => updateQuantity(quantity - 1)}
-                disabled={quantity <= 1}
+                onClick={() => updateQuantity(displayedQuantity - 1)}
+                disabled={displayedQuantity <= 1 || product.stock === 0}
               >
                 −
               </button>
@@ -99,18 +110,17 @@ function ProductCard({ product }: ProductCardProps) {
                 aria-label="Quantity"
                 type="number"
                 min="1"
-                max={MAX_QUANTITY}
-                value={quantity}
-                onChange={(event) =>
-                  updateQuantity(Number(event.target.value))
-                }
+                max={maxQuantity || 1}
+                value={displayedQuantity || ""}
+                disabled={product.stock === 0}
+                onChange={(event) => updateQuantity(Number(event.target.value))}
               />
 
               <button
                 type="button"
                 aria-label="Increase quantity"
-                onClick={() => updateQuantity(quantity + 1)}
-                disabled={quantity >= MAX_QUANTITY}
+                onClick={() => updateQuantity(displayedQuantity + 1)}
+                disabled={displayedQuantity >= maxQuantity || product.stock === 0}
               >
                 +
               </button>
@@ -120,18 +130,21 @@ function ProductCard({ product }: ProductCardProps) {
               className="primary-button product-add-button"
               type="button"
               onClick={handleAddToCart}
+              disabled={product.stock === 0}
             >
-              Add to cart
+              {product.stock === 0 ? "Unavailable" : "Add to cart"}
             </button>
           </div>
+
+          <Link className="product-details-link" to={`/products/${product.id}`}>
+            View details
+          </Link>
         </div>
       </article>
 
       {cartMessage && (
         <div className="cart-toast" role="status" aria-live="polite">
-          <span className="cart-toast-icon" aria-hidden="true">
-            ✓
-          </span>
+          <span className="cart-toast-icon" aria-hidden="true">✓</span>
           <div>
             <strong>Added to cart</strong>
             <span>{cartMessage}</span>

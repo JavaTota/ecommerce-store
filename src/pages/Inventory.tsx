@@ -197,9 +197,17 @@ function Inventory() {
     const description = editingProduct.description.trim();
     const image = editingProduct.image.trim();
     const price = Number(editingProduct.price);
+    const stock = Number(editingProduct.stock);
 
-    if (!title || !category || !description || price <= 0) {
-      setError("Complete every product field and enter a price above $0.");
+    if (
+      !title ||
+      !category ||
+      !description ||
+      price <= 0 ||
+      !Number.isInteger(stock) ||
+      stock < 0
+    ) {
+      setError("Complete every product field, enter a price above $0 and a valid whole-number stock quantity.");
       return;
     }
 
@@ -219,6 +227,7 @@ function Inventory() {
         description,
         category,
         image,
+        stock,
       });
 
       setEditingProduct(null);
@@ -354,6 +363,23 @@ function Inventory() {
               </div>
 
               <div className="inventory-field">
+                <label htmlFor="edit-stock">Stock</label>
+                <input
+                  id="edit-stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editingProduct.stock}
+                  onChange={(event) =>
+                    setEditingProduct({
+                      ...editingProduct,
+                      stock: Math.max(0, Math.floor(Number(event.target.value) || 0)),
+                    })
+                  }
+                />
+              </div>
+
+              <div className="inventory-field">
                 <label htmlFor="edit-category">Category</label>
                 <input
                   id="edit-category"
@@ -463,9 +489,16 @@ function Inventory() {
                     <p className="inventory-product-description">
                       {product.description}
                     </p>
-                    <p className="inventory-product-price">
-                      ${Number(product.price).toFixed(2)}
-                    </p>
+                    <div className="inventory-product-meta-row">
+                      <p className="inventory-product-price">
+                        ${Number(product.price).toFixed(2)}
+                      </p>
+                      <span className={`inventory-stock ${
+                        product.stock === 0 ? "out" : product.stock <= 5 ? "low" : "in"
+                      }`}>
+                        {product.stock} in stock
+                      </span>
+                    </div>
 
                     <div className="inventory-card-actions">
                       <button

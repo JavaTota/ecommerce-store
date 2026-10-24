@@ -4,9 +4,11 @@ service cloud.firestore {
     function isAuthenticated() { return request.auth != null; }
     function isOwner(uid) { return isAuthenticated() && request.auth.uid == uid; }
     function isAdmin() { return isAuthenticated() && request.auth.token.get('admin', false) == true; }
+
     function validString(value, min, max) {
       return value is string && value.size() >= min && value.size() <= max;
     }
+
     function uidUnchanged() { return request.resource.data.uid == request.auth.uid; }
     function uidNotModified() { return request.resource.data.uid == resource.data.uid; }
 
@@ -21,9 +23,13 @@ service cloud.firestore {
         && (!('address' in data) || validString(data.address, 0, 500));
     }
 
+    function stockOf(data) {
+      return ('stock' in data && data.stock is int) ? data.stock : 25;
+    }
+
     function isValidProduct(data) {
-      return data.keys().hasAll(['title', 'price', 'category', 'description', 'image'])
-        && data.keys().hasOnly(['title', 'price', 'category', 'description', 'image'])
+      return data.keys().hasAll(['title', 'price', 'category', 'description', 'image', 'stock'])
+        && data.keys().hasOnly(['title', 'price', 'category', 'description', 'image', 'stock'])
         && validString(data.title, 1, 150)
         && validString(data.category, 1, 80)
         && validString(data.description, 1, 2000)
@@ -32,7 +38,18 @@ service cloud.firestore {
         && data.price is number
         && data.price >= 0.01
         && data.price <= 1000000
-        && data.price == math.round(data.price * 100) / 100.0;
+        && data.price == math.round(data.price * 100) / 100.0
+        && data.stock is int
+        && data.stock >= 0
+        && data.stock <= 100000;
+    }
+
+    function customerStockDecrease() {
+      return isAuthenticated()
+        && isValidProduct(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock'])
+        && request.resource.data.stock < stockOf(resource.data)
+        && stockOf(resource.data) - request.resource.data.stock <= 99;
     }
 
     function validLine(item) {
@@ -53,7 +70,11 @@ service cloud.firestore {
         && p.image is string && p.image.size() <= 2048 && p.image.matches('https://.+')
         && p.price is number && p.price >= 0.01 && p.price <= 1000000
         && item.keys().hasOnly(['id', 'quantity', 'title', 'category', 'description', 'image', 'price'])
-        && item.diff(p).affectedKeys().hasOnly(['id', 'quantity']);
+        && item.title == p.title
+        && item.category == p.category
+        && item.description == p.description
+        && item.image == p.image
+        && item.price == p.price;
     }
 
     function lineTotals(items, index) {
@@ -77,11 +98,37 @@ service cloud.firestore {
         && data.totalItems == a[1] + b[1] + c[1] + d[1];
     }
 
+    function validOrderStatus(status) {
+      return status == 'submitted'
+        || status == 'processing'
+        || status == 'shipped'
+        || status == 'delivered'
+        || status == 'cancelled';
+    }
+
     function isValidOrder(data) {
-      return data.keys().hasAll(['userId', 'products', 'totalItems', 'totalPrice', 'status', 'createdAt'])
-        && data.keys().hasOnly(['userId', 'products', 'totalItems', 'totalPrice', 'status', 'createdAt'])
+      return data.keys().hasAll([
+          'userId',
+          'customerEmail',
+          'products',
+          'totalItems',
+          'totalPrice',
+          'status',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'userId',
+          'customerEmail',
+          'products',
+          'totalItems',
+          'totalPrice',
+          'status',
+          'createdAt'
+        ])
         && validString(data.userId, 1, 128)
         && isOwner(data.userId)
+        && validString(data.customerEmail, 1, 254)
+        && data.customerEmail == request.auth.token.email
         && data.status == 'submitted'
         && data.createdAt is timestamp
         && data.createdAt == request.time
@@ -108,15 +155,21 @@ service cloud.firestore {
 
     match /products/{id} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidProduct(request.resource.data);
+      allow create: if isAdmin() && isValidProduct(request.resource.data);
+      allow update: if (isAdmin() && isValidProduct(request.resource.data))
+        || customerStockDecrease();
       allow delete: if isAdmin();
     }
 
     match /orders/{id} {
-      allow get: if isAuthenticated() && (resource == null || isOwner(resource.data.userId));
-      allow list: if isOwner(resource.data.userId);
+      allow get: if isAdmin()
+        || (isAuthenticated() && resource != null && isOwner(resource.data.userId));
+      allow list: if isAdmin() || (isAuthenticated() && isOwner(resource.data.userId));
       allow create: if isValidOrder(request.resource.data);
-      allow update, delete: if false;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && validOrderStatus(request.resource.data.status);
+      allow delete: if false;
     }
 
     match /{document=**} {

@@ -15,8 +15,22 @@ const MAX_ITEM_QUANTITY = 99;
 
 const savedCart = sessionStorage.getItem("cart");
 
+function loadSavedCart(): CartItem[] {
+  if (!savedCart) return [];
+
+  try {
+    const parsed = JSON.parse(savedCart) as CartItem[];
+    return parsed.map((item) => ({
+      ...item,
+      stock: Number.isInteger(item.stock) && item.stock >= 0 ? item.stock : 25,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 const initialState: CartState = {
-  cartItems: savedCart ? JSON.parse(savedCart) : [],
+  cartItems: loadSavedCart(),
 };
 
 const saveCartToSessionStorage = (cartItems: CartItem[]) => {
@@ -29,8 +43,11 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action: PayloadAction<AddToCartPayload>) => {
       const { product, quantity } = action.payload;
+      const stockLimit = Math.min(MAX_ITEM_QUANTITY, Math.max(0, product.stock));
+      if (stockLimit === 0) return;
+
       const safeQuantity = Math.min(
-        MAX_ITEM_QUANTITY,
+        stockLimit,
         Math.max(1, Math.floor(quantity))
       );
 
@@ -39,8 +56,9 @@ const cartSlice = createSlice({
       );
 
       if (existingItem) {
+        existingItem.stock = product.stock;
         existingItem.quantity = Math.min(
-          MAX_ITEM_QUANTITY,
+          stockLimit,
           existingItem.quantity + safeQuantity
         );
       } else {
@@ -71,7 +89,11 @@ const cartSlice = createSlice({
         (item) => item.id === action.payload
       );
 
-      if (item && item.quantity < MAX_ITEM_QUANTITY) {
+      const stockLimit = item
+        ? Math.min(MAX_ITEM_QUANTITY, Math.max(0, item.stock))
+        : 0;
+
+      if (item && item.quantity < stockLimit) {
         item.quantity += 1;
       }
 

@@ -6,7 +6,7 @@ function CustomerRoute({ children }: { children: ReactNode }) {
   const { isAdmin, loading } = useAuth();
 
   if (loading) return <div className="route-status">Checking access…</div>;
-  if (isAdmin) return <Navigate to="/admin/inventory" replace />;
+  if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
 
   return children;
 }

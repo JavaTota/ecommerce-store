@@ -26,6 +26,6 @@ npm run admin:grant -- admin@example.com
 
 6. Log out of the web application and log back in so Firebase issues a fresh ID token.
 
-The account will then see **Admin Panel** and may access `/admin/products`.
+The account will then see the admin navigation and may access `/admin/dashboard`, `/admin/inventory`, `/admin/products`, and `/admin/orders`.
 
 Never commit the service-account JSON file.

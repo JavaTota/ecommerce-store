@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { db } from "../lib/firebase/firebase";
 import "../styles/auth-styles.css";
@@ -36,7 +37,7 @@ function getPasswordErrorMessage(code: string) {
 }
 
 function Profile() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [name, setName] = useState(user?.displayName || "");
   const [address, setAddress] = useState("");
@@ -201,6 +202,12 @@ function Profile() {
               <strong>Profile action failed</strong>
               <p>{error}</p>
             </div>
+          )}
+
+          {!isAdmin && (
+            <Link className="profile-orders-link" to="/orders">
+              View order history →
+            </Link>
           )}
 
           <form onSubmit={handleUpdateProfile} className="auth-form">

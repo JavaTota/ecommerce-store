@@ -18,6 +18,7 @@ const HEADER_ALIASES: Record<keyof ProductDraft, string[]> = {
   category: ["category", "type", "department"],
   description: ["description", "desc", "details"],
   image: ["image", "imageurl", "image_url", "photo", "photourl", "url"],
+  stock: ["stock", "inventory", "quantity", "qty", "units"],
 };
 
 function normalizeHeader(value: string): string {
@@ -52,6 +53,14 @@ function asString(value: unknown): string {
   return String(value).trim();
 }
 
+function asInteger(value: unknown, fallback = 25): number {
+  const cleaned = asString(value).replace(/,/g, "");
+  if (!cleaned) return fallback;
+
+  const parsed = Number(cleaned);
+  return Number.isInteger(parsed) ? parsed : Number.NaN;
+}
+
 function asPrice(value: unknown): number {
   if (typeof value === "number") return value;
 
@@ -80,6 +89,10 @@ function validateProduct(product: ProductDraft): string[] {
     !product.image.startsWith("https://")
   ) {
     errors.push("Image must be a valid HTTPS URL up to 2,048 characters.");
+  }
+
+  if (!Number.isInteger(product.stock) || product.stock < 0 || product.stock > 100000) {
+    errors.push("Stock must be a whole number between 0 and 100,000.");
   }
 
   if (
@@ -142,6 +155,7 @@ export async function parseProductImportFile(
       category: asString(getValue(row, "category")),
       description: asString(getValue(row, "description")),
       image: asString(getValue(row, "image")),
+      stock: asInteger(getValue(row, "stock"), 25),
     };
 
     return {
@@ -155,13 +169,14 @@ export async function parseProductImportFile(
 
 export function downloadProductImportTemplate(): void {
   const csv = [
-    ["title", "price", "category", "description", "image"],
+    ["title", "price", "category", "description", "image", "stock"],
     [
       "Urban Travel Backpack",
       "54.99",
       "Accessories",
       "Durable everyday backpack with padded straps and multiple storage compartments.",
       "https://images.unsplash.com/photo-1553062407-98eeb64c6a62",
+      "25",
     ],
   ]
     .map((row) =>

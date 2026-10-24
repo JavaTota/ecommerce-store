@@ -20,6 +20,9 @@ function CustomerNavigation() {
 
       {user ? (
         <>
+          <Link className="nav-link" to="/orders">
+            Orders
+          </Link>
           <Link className="nav-link" to="/profile">
             Profile
           </Link>
@@ -48,11 +51,17 @@ function CustomerNavigation() {
 function AdminNavigation() {
   return (
     <nav className="navbar-links" aria-label="Admin navigation">
+      <Link className="nav-link admin-nav-link" to="/admin/dashboard">
+        Dashboard
+      </Link>
       <Link className="nav-link admin-nav-link" to="/admin/inventory">
         Inventory
       </Link>
       <Link className="nav-link admin-nav-link" to="/admin/products">
         Product Management
+      </Link>
+      <Link className="nav-link admin-nav-link" to="/admin/orders">
+        Orders
       </Link>
       <Link className="nav-link" to="/profile">
         Profile
@@ -72,7 +81,7 @@ function Navbar() {
       <div className="container navbar-inner">
         <Link
           className="navbar-brand"
-          to={isAdmin ? "/admin/inventory" : "/"}
+          to={isAdmin ? "/admin/dashboard" : "/"}
         >
           Fake<span>Store</span>
         </Link>

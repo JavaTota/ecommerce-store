@@ -1,57 +1,52 @@
 name: Ecommerce App CI/CD
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
 jobs:
-  #CI
   build:
-    # This job will run on every push and pull request to the main branch. It will check out the code, set up Node.js, install dependencies, run tests, and build the application.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      #step 1: Checkout code
       - name: Checkout code
-        uses: actions/checkout@v4
-      #step 2: Setup Node.js
+        uses: actions/checkout@v7
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 24.x
-      #step 3: Install dependencies
+          node-version: 24
+          cache: npm
+
       - name: Install dependencies
-        run: npm install
-      #step 4: Run tests
+        run: npm ci
+
       - name: Run tests
-        run: npm test
-      #step 5: Build application
+        run: npm run test:run
+
+      - name: Lint
+        run: npm run lint
+
       - name: Build application
         run: npm run build
-  #CD
+
   deploy:
-    # This job will run only on pushes to the main branch. It will check out the code, set up Node.js, install dependencies, build the application, and deploy it to a hosting service (e.g., Vercel).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     if: github.ref == 'refs/heads/main'
     steps:
-      #step 1: Checkout code
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      #step 2: Setup Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 24.x
+          node-version: 24
+          cache: npm
 
-      #step 3: Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      #step 4: Build application
-      #- name: Build application
-      # run: npm run build
-
-      #step 5: Deploy to Vercel (or any hosting service)
       - name: Deploy to Vercel
         run: npx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
