@@ -145,7 +145,7 @@ function Register() {
           />
 
           <button className="auth-button" type="submit">
-            Register
+            Create account
           </button>
         </form>
 

@@ -105,7 +105,7 @@ function Login() {
           />
 
           <button className="auth-button" type="submit">
-            Login
+            Sign in
           </button>
         </form>
 
