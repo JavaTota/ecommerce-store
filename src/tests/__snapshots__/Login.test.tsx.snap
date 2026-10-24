@@ -35,6 +35,30 @@ exports[`matches snapshot 1`] = `
           Login
         </button>
       </form>
+      <div
+        class="auth-links"
+      >
+        <a
+          class="auth-secondary-link"
+          data-discover="true"
+          href="/forgot-password"
+        >
+          Forgot your password?
+        </a>
+        <div
+          class="auth-footer"
+        >
+          <span>
+            Don't have an account?
+          </span>
+          <a
+            data-discover="true"
+            href="/register"
+          >
+            Register
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </DocumentFragment>
